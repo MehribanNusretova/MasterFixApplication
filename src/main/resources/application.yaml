@@ -1,0 +1,13 @@
+spring:
+  application:
+    name: masterFix
+
+datasource:
+   url: jdbc:postgresql://localhost:5434/ustafix_db
+   username: postgres
+   password: 12345
+
+jpa:
+   hibernate:
+     ddl-auto: update
+   show-sql: true
