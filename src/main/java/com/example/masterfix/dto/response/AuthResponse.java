@@ -9,7 +9,7 @@ public record AuthResponse
     //  "email":"test@gmail.com",
     //  "password":"123456",
     //  "phone":"0501234567"
-   (  String accessToken,
+   (  String token,
       String email,
       Role role)
 {}
