@@ -47,15 +47,15 @@ public class User implements UserDetails {
     @Column(nullable = false, unique = true)
     String email;
 
-    @NotBlank()
-    @Pattern(regexp = "^[a-zA-Z0-9]{6,16}$", message = "Username must be 6-12 alphanumeric characters")
-    @Column(nullable = false)
-    String password;
-
     @NotBlank(message = "Telefon nömrəsi boş ola bilməz")
     @Column(nullable = false, unique = true)
     @Pattern(regexp = "^(\\+994|0)(10|5[015]|7[07]|99)\\d{7}$", message = "Invalid Azerbaijan phone number format")
     String phone;
+
+    @NotBlank()
+    @Pattern(regexp = "^[a-zA-Z0-9]{6,16}$", message = "Username must be 6-12 alphanumeric characters")
+    @Column(nullable = false)
+    String password;
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
