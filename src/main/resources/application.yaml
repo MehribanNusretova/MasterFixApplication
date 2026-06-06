@@ -11,3 +11,7 @@ jpa:
    hibernate:
      ddl-auto: update
    show-sql: true
+
+jwt:
+  secret-key: masterfix-secret-key-masterfix-secret-key-masterfix
+  expiration: 86400000
