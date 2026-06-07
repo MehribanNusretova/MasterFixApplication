@@ -3,6 +3,7 @@ package com.example.masterfix.repository;
 import com.example.masterfix.entity.Category;
 import com.example.masterfix.entity.Master;
 import com.example.masterfix.entity.User;
+import io.micrometer.common.KeyValues;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 import java.util.List;
@@ -17,4 +18,6 @@ public interface MasterRepository extends JpaRepository<Master, Long> {
     List<Master> findByCityIgnoreCase(String city);
 
     List<Master> findByAvailableTrue();
+
+    List<Master> findByCategoryId(Long categoryId);
 }

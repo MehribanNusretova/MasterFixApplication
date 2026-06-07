@@ -12,7 +12,8 @@ public record MasterResponse (
     Double priceTo,
     Boolean available,
     Double averageRating,
-    Integer completedJobs
+    Integer completedJobs,
+    String profileImageUrl
 
 )
 {
