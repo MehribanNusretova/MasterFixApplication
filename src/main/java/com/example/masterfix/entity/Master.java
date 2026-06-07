@@ -26,7 +26,7 @@ public class Master {
     User user;
 
     @ManyToOne
-    @JoinColumn(name = "category_id", nullable = false, unique = true)
+    @JoinColumn(name = "category_id", nullable = false)
     Category category;
 
     @NotBlank
@@ -35,7 +35,7 @@ public class Master {
 
     @NotNull
     @Min(0)
-    Integer ExperienceYear;
+    Integer experienceYear;
 
     @NotBlank
     @Column(nullable = false)
