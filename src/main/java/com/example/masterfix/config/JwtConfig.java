@@ -14,4 +14,6 @@ public class JwtConfig {
     private String secretKey;
 
     private Long expiration;
+
+    private Long refreshExpiration;
 }
