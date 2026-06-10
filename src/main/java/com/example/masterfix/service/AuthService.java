@@ -5,6 +5,9 @@ import com.example.masterfix.dto.request.RegisterRequest;
 import com.example.masterfix.dto.response.AuthResponse;
 import com.example.masterfix.entity.User;
 import com.example.masterfix.enums.Role;
+import com.example.masterfix.exception.AccessDeniedException;
+import com.example.masterfix.exception.AlreadyExistsException;
+import com.example.masterfix.exception.ResourceNotFoundException;
 import com.example.masterfix.repository.UserRepository;
 import com.example.masterfix.security.JwtService;
 import lombok.AccessLevel;
@@ -14,10 +17,7 @@ import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
-/**
- * AuthService register və login proseslərini idarə edir.
- * User yaratmaq, password encode etmək, login yoxlamaq və token qaytarmaq burada olur.
- */
+
 @Service
 @RequiredArgsConstructor
 @FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
@@ -30,13 +30,13 @@ public class AuthService {
 
     public AuthResponse register(RegisterRequest request) {
         if(userRepository.existsByEmail(request.email())){
-            throw new RuntimeException("Bu email artiq istifade olunur");
+            throw new AlreadyExistsException("Bu email artiq istifade olunur");
         }
         if(userRepository.existsByUserName(request.userName())){
-            throw new RuntimeException("Bu username artiq istifade olunur");
+            throw new AlreadyExistsException("Bu username artiq istifade olunur");
         }
         if(userRepository.existsByPhone(request.phone())){
-            throw new RuntimeException("Bu phone artiq istifade olunur");
+            throw new AlreadyExistsException("Bu phone artiq istifade olunur");
         }
         User user = new User();
         user.setFirstName(request.firstName());
@@ -45,7 +45,7 @@ public class AuthService {
         user.setEmail(request.email());
         user.setPhone(request.phone());
         user.setPassword(passwordEncoder.encode(request.password()));
-        user.setRole(Role.User);
+        user.setRole(Role.USER);
         User savedUser = userRepository.save(user);
 
         String token = jwtService.generateToken(savedUser);
@@ -56,9 +56,7 @@ public class AuthService {
                 savedUser.getRole()
         );
     }
-    /**
-     * User login edir. Email və password düzgündürsə JWT token qaytarılır.
-     */
+
     public AuthResponse login(LoginRequest request) {
 
         authenticationManager.authenticate(
@@ -68,7 +66,7 @@ public class AuthService {
                 )
         );
         User user = userRepository.findByEmail(request.email())
-                .orElseThrow(() -> new RuntimeException("User tapılmadı"));
+                .orElseThrow(() -> new ResourceNotFoundException("User tapılmadı"));
 
         String token = jwtService.generateToken(user);
 

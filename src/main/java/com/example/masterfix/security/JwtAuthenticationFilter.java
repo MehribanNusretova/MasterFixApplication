@@ -16,10 +16,7 @@ import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
 
-/**
- * Hər request gələndə Authorization header-də JWT token olub-olmadığını yoxlayır.
- * Token düzgündürsə, user-i Spring SecurityContext-ə yerləşdirir.
- */
+
 @Component
 @RequiredArgsConstructor
 public class JwtAuthenticationFilter extends OncePerRequestFilter {

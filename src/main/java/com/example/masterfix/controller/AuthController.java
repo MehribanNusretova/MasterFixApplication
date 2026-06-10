@@ -4,6 +4,7 @@ import com.example.masterfix.dto.request.LoginRequest;
 import com.example.masterfix.dto.request.RegisterRequest;
 import com.example.masterfix.dto.response.AuthResponse;
 import com.example.masterfix.service.AuthService;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 
@@ -18,7 +19,7 @@ public class AuthController {
 
     @PostMapping("/register")
     public AuthResponse register(
-            @RequestBody RegisterRequest request
+           @Valid @RequestBody RegisterRequest request
     ) {
 
         return authService.register(request);
@@ -27,7 +28,7 @@ public class AuthController {
 
     @PostMapping("/login")
     public AuthResponse login(
-            @RequestBody LoginRequest request
+           @Valid @RequestBody LoginRequest request
     ) {
 
         return authService.login(request);
