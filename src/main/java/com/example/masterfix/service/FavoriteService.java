@@ -4,6 +4,8 @@ import com.example.masterfix.dto.response.FavoriteResponse;
 import com.example.masterfix.entity.Favorite;
 import com.example.masterfix.entity.Master;
 import com.example.masterfix.entity.User;
+import com.example.masterfix.exception.AlreadyExistsException;
+import com.example.masterfix.exception.ResourceNotFoundException;
 import com.example.masterfix.repository.FavoriteRepository;
 import com.example.masterfix.repository.MasterRepository;
 import com.example.masterfix.repository.UserRepository;
@@ -28,13 +30,13 @@ public class FavoriteService {
         String email = authentication.getName();
 
         User user = userRepository.findByEmail(email)
-                .orElseThrow(() -> new RuntimeException("User tapılmadı"));
+                .orElseThrow(() -> new ResourceNotFoundException("User tapılmadı"));
 
         Master master = masterRepository.findById(masterId)
-                .orElseThrow(() -> new RuntimeException("Master tapılmadı"));
+                .orElseThrow(() -> new ResourceNotFoundException("Master tapılmadı"));
 
         if (favoriteRepository.existsByUserAndMaster(user, master)) {
-            throw new RuntimeException("Bu master artıq favorite siyahısındadır");
+            throw new AlreadyExistsException("Bu master artıq favorite siyahısındadır");
         }
 
         Favorite favorite = new Favorite();
@@ -53,13 +55,13 @@ public class FavoriteService {
         String email = authentication.getName();
 
         User user = userRepository.findByEmail(email)
-                .orElseThrow(() -> new RuntimeException("User tapılmadı"));
+                .orElseThrow(() -> new ResourceNotFoundException("User tapılmadı"));
 
         Master master = masterRepository.findById(masterId)
-                .orElseThrow(() -> new RuntimeException("Master tapılmadı"));
+                .orElseThrow(() -> new ResourceNotFoundException("Master tapılmadı"));
 
         Favorite favorite = favoriteRepository.findByUserAndMaster(user, master)
-                .orElseThrow(() -> new RuntimeException("Favorite tapılmadı"));
+                .orElseThrow(() -> new ResourceNotFoundException("Favorite tapılmadı"));
 
         favoriteRepository.delete(favorite);
     }
@@ -70,7 +72,7 @@ public class FavoriteService {
         String email = authentication.getName();
 
         User user = userRepository.findByEmail(email)
-                .orElseThrow(() -> new RuntimeException("User tapılmadı"));
+                .orElseThrow(() -> new ResourceNotFoundException("User tapılmadı"));
 
         return favoriteRepository.findByUser(user)
                 .stream()

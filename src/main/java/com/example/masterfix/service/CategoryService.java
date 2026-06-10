@@ -3,6 +3,8 @@ package com.example.masterfix.service;
 import com.example.masterfix.dto.request.CategoryRequest;
 import com.example.masterfix.dto.response.CategoryResponse;
 import com.example.masterfix.entity.Category;
+import com.example.masterfix.exception.AlreadyExistsException;
+import com.example.masterfix.exception.ResourceNotFoundException;
 import com.example.masterfix.repository.CategoryRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -19,7 +21,7 @@ public class CategoryService {
     public CategoryResponse createCategory(CategoryRequest request) {
 
         if (categoryRepository.existsByName(request.name())) {
-            throw new RuntimeException("Bu category artıq mövcuddur");
+            throw new AlreadyExistsException("Bu category artıq mövcuddur");
         }
 
         Category category = new Category();
@@ -45,7 +47,7 @@ public class CategoryService {
     public CategoryResponse getCategoryById(Long id) {
 
         Category category = categoryRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Category tapılmadı"));
+                .orElseThrow(() -> new ResourceNotFoundException("Category tapılmadı"));
 
         return mapToCategoryResponse(category);
     }
@@ -54,7 +56,7 @@ public class CategoryService {
     public CategoryResponse updateCategory(Long id, CategoryRequest request) {
 
         Category category = categoryRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Category tapılmadı"));
+                .orElseThrow(() -> new ResourceNotFoundException("Category tapılmadı"));
 
         category.setName(request.name());
         category.setDescription(request.description());
@@ -67,7 +69,7 @@ public class CategoryService {
     public void deleteCategory(Long id) {
 
         Category category = categoryRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Category tapılmadı"));
+                .orElseThrow(() -> new ResourceNotFoundException("Category tapılmadı"));
 
         category.setActive(false);
 

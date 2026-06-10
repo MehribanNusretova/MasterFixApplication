@@ -6,6 +6,8 @@ import com.example.masterfix.entity.Category;
 import com.example.masterfix.entity.Master;
 import com.example.masterfix.entity.User;
 import com.example.masterfix.enums.Role;
+import com.example.masterfix.exception.AlreadyExistsException;
+import com.example.masterfix.exception.ResourceNotFoundException;
 import com.example.masterfix.repository.CategoryRepository;
 import com.example.masterfix.repository.MasterRepository;
 import com.example.masterfix.repository.UserRepository;
@@ -15,10 +17,6 @@ import org.springframework.stereotype.Service;
 
 import java.util.List;
 
-/**
- * MasterService usta profili ilə bağlı biznes məntiqini saxlayır.
- * Burada master yaratmaq, göstərmək, update etmək və silmək/deaktiv etmək olur.
- */
 @Service
 @RequiredArgsConstructor
 public class MasterService {
@@ -27,23 +25,24 @@ public class MasterService {
     private final UserRepository userRepository;
     private final CategoryRepository categoryRepository;
 
-
     public MasterResponse createMaster(Authentication authentication, MasterRequest request) {
+
+        validateMasterPrices(request);
 
         String email = authentication.getName();
 
         User user = userRepository.findByEmail(email)
-                .orElseThrow(() -> new RuntimeException("User tapılmadı"));
+                .orElseThrow(() -> new ResourceNotFoundException("User tapılmadı"));
 
         if (masterRepository.findByUser(user).isPresent()) {
-            throw new RuntimeException("Bu user artıq master profilinə sahibdir");
+            throw new AlreadyExistsException("Bu user artıq master profilinə sahibdir");
         }
 
+
         Category category = categoryRepository.findById(request.categoryId())
-                .orElseThrow(() -> new RuntimeException("Category tapılmadı"));
+                .orElseThrow(() -> new ResourceNotFoundException("Category tapılmadı"));
 
         Master master = new Master();
-
         master.setUser(user);
         master.setCategory(category);
         master.setDescription(request.description());
@@ -54,12 +53,10 @@ public class MasterService {
         master.setPriceTo(request.priceTo());
         master.setAvailable(true);
 
-        user.setRole(Role.Master);
-
+        user.setRole(Role.MASTER);
         userRepository.save(user);
 
         Master savedMaster = masterRepository.save(master);
-
         return mapToMasterResponse(savedMaster);
     }
 
@@ -71,27 +68,27 @@ public class MasterService {
                 .toList();
     }
 
-
     public MasterResponse getMasterById(Long id) {
-
         Master master = masterRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Master tapılmadı"));
+                .orElseThrow(() -> new ResourceNotFoundException("Master tapılmadı"));
 
         return mapToMasterResponse(master);
     }
 
     public MasterResponse updateMyMasterProfile(Authentication authentication, MasterRequest request) {
 
+        validateMasterPrices(request);
+
         String email = authentication.getName();
 
         User user = userRepository.findByEmail(email)
-                .orElseThrow(() -> new RuntimeException("User tapılmadı"));
+                .orElseThrow(() -> new ResourceNotFoundException("User tapılmadı"));
 
         Master master = masterRepository.findByUser(user)
-                .orElseThrow(() -> new RuntimeException("Master profili tapılmadı"));
+                .orElseThrow(() -> new ResourceNotFoundException("Master profili tapılmadı"));
 
         Category category = categoryRepository.findById(request.categoryId())
-                .orElseThrow(() -> new RuntimeException("Category tapılmadı"));
+                .orElseThrow(() -> new ResourceNotFoundException("Category tapılmadı"));
 
         master.setCategory(category);
         master.setDescription(request.description());
@@ -102,26 +99,21 @@ public class MasterService {
         master.setPriceTo(request.priceTo());
 
         Master updatedMaster = masterRepository.save(master);
-
         return mapToMasterResponse(updatedMaster);
     }
 
-
     public void deleteMyMasterProfile(Authentication authentication) {
-
         String email = authentication.getName();
 
         User user = userRepository.findByEmail(email)
-                .orElseThrow(() -> new RuntimeException("User tapılmadı"));
+                .orElseThrow(() -> new ResourceNotFoundException("User tapılmadı"));
 
         Master master = masterRepository.findByUser(user)
-                .orElseThrow(() -> new RuntimeException("Master profili tapılmadı"));
+                .orElseThrow(() -> new ResourceNotFoundException("Master profili tapılmadı"));
 
         master.setAvailable(false);
-
         masterRepository.save(master);
     }
-
 
     public List<MasterResponse> getMastersByCategory(Long categoryId) {
         return masterRepository.findByCategoryId(categoryId)
@@ -130,7 +122,6 @@ public class MasterService {
                 .toList();
     }
 
-
     public List<MasterResponse> getMastersByCity(String city) {
         return masterRepository.findByCityIgnoreCase(city)
                 .stream()
@@ -138,6 +129,19 @@ public class MasterService {
                 .toList();
     }
 
+    private void validateMasterPrices(MasterRequest request) {
+        if (request.priceFrom() != null && request.priceTo() != null && request.priceFrom() > request.priceTo()) {
+            throw new IllegalArgumentException("Minimum qiymət maksimum qiymətdən böyük ola bilməz!");
+        }
+    }
+    public List<MasterResponse> searchMasters(Long categoryId, String city) {
+        return masterRepository.findAll()
+                .stream()
+                .filter(master -> categoryId == null || master.getCategory().getId().equals(categoryId))
+                .filter(master -> city == null || city.trim().isEmpty() || master.getCity().equalsIgnoreCase(city.trim()))
+                .map(this::mapToMasterResponse)
+                .toList();
+    }
 
     private MasterResponse mapToMasterResponse(Master master) {
         return new MasterResponse(

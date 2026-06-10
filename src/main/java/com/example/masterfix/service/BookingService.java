@@ -6,6 +6,8 @@ import com.example.masterfix.entity.Booking;
 import com.example.masterfix.entity.Master;
 import com.example.masterfix.entity.User;
 import com.example.masterfix.enums.BookingStatusEnum;
+import com.example.masterfix.exception.AccessDeniedException;
+import com.example.masterfix.exception.ResourceNotFoundException;
 import com.example.masterfix.repository.BookingRepository;
 import com.example.masterfix.repository.MasterRepository;
 import com.example.masterfix.repository.UserRepository;
@@ -15,11 +17,7 @@ import org.springframework.stereotype.Service;
 
 import java.util.List;
 
-/**
- * BookingService sifariş biznes məntiqini idarə edir.
- * User booking yaradır, öz bookinglərini görür,
- * master isə sifarişi qəbul/rədd/tamamlanmış edə bilir.
- */
+
 @Service
 @RequiredArgsConstructor
 public class BookingService {
@@ -34,13 +32,13 @@ public class BookingService {
         String email = authentication.getName();
 
         User user = userRepository.findByEmail(email)
-                .orElseThrow(() -> new RuntimeException("User tapılmadı"));
+                .orElseThrow(() -> new ResourceNotFoundException("User tapılmadı"));
 
         Master master = masterRepository.findById(request.masterId())
-                .orElseThrow(() -> new RuntimeException("Master tapılmadı"));
+                .orElseThrow(() -> new ResourceNotFoundException("Master tapılmadı"));
 
         if (!master.isAvailable()) {
-            throw new RuntimeException("Bu master hazırda sifariş qəbul etmir");
+            throw new ResourceNotFoundException("Bu master hazırda sifariş qəbul etmir");
         }
 
         Booking booking = new Booking();
@@ -62,7 +60,7 @@ public class BookingService {
         String email = authentication.getName();
 
         User user = userRepository.findByEmail(email)
-                .orElseThrow(() -> new RuntimeException("User tapılmadı"));
+                .orElseThrow(() -> new ResourceNotFoundException("User tapılmadı"));
 
         return bookingRepository.findByUser(user)
                 .stream()
@@ -76,10 +74,10 @@ public class BookingService {
         String email = authentication.getName();
 
         User user = userRepository.findByEmail(email)
-                .orElseThrow(() -> new RuntimeException("User tapılmadı"));
+                .orElseThrow(() -> new ResourceNotFoundException("User tapılmadı"));
 
         Master master = masterRepository.findByUser(user)
-                .orElseThrow(() -> new RuntimeException("Master profili tapılmadı"));
+                .orElseThrow(() -> new ResourceNotFoundException("Master profili tapılmadı"));
 
         return bookingRepository.findByMaster(master)
                 .stream()
@@ -126,13 +124,13 @@ public class BookingService {
         String email = authentication.getName();
 
         User user = userRepository.findByEmail(email)
-                .orElseThrow(() -> new RuntimeException("User tapılmadı"));
+                .orElseThrow(() -> new ResourceNotFoundException("User tapılmadı"));
 
         Booking booking = bookingRepository.findById(bookingId)
-                .orElseThrow(() -> new RuntimeException("Booking tapılmadı"));
+                .orElseThrow(() -> new ResourceNotFoundException("Booking tapılmadı"));
 
         if (!booking.getUser().getId().equals(user.getId())) {
-            throw new RuntimeException("Bu sifariş sizə aid deyil");
+            throw new AccessDeniedException("Bu sifariş sizə aid deyil");
         }
 
         booking.setBookingStatus(BookingStatusEnum.CANCELLED);
@@ -145,16 +143,16 @@ public class BookingService {
 
         String email = authentication.getName();
         User user = userRepository.findByEmail(email)
-                .orElseThrow(() -> new RuntimeException("User tapılmadı"));
+                .orElseThrow(() -> new ResourceNotFoundException("User tapılmadı"));
 
         Master master = masterRepository.findByUser(user)
-                .orElseThrow(() -> new RuntimeException("Master profili tapılmadı"));
+                .orElseThrow(() -> new ResourceNotFoundException("Master profili tapılmadı"));
 
         Booking booking = bookingRepository.findById(bookingId)
-                .orElseThrow(() -> new RuntimeException("Sifariş tapılmadı"));
+                .orElseThrow(() -> new ResourceNotFoundException("Sifariş tapılmadı"));
 
         if (!booking.getMaster().getId().equals(master.getId())) {
-            throw new RuntimeException("Bu sifariş sizə aid deyil");
+            throw new AccessDeniedException("Bu sifariş sizə aid deyil");
         }
 
         return booking;
@@ -172,5 +170,23 @@ public class BookingService {
                 booking.getBookingDate(),
                 booking.getBookingStatus()
         );
+    }
+    public BookingResponse getBookingById(Authentication authentication, Long id) {
+        String email = authentication.getName();
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new ResourceNotFoundException("İstifadəçi tapılmadı"));
+
+        Booking booking = bookingRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Sifariş tapılmadı"));
+
+        boolean isOwner = booking.getUser().getId().equals(user.getId());
+        boolean isMasterOfBooking = booking.getMaster().getUser().getId().equals(user.getId());
+        boolean isAdmin = user.getRole().name().equalsIgnoreCase("ADMIN");
+
+        if (!isOwner && !isMasterOfBooking && !isAdmin) {
+            throw new AccessDeniedException("Bu sifarişin detallarına baxmaq üçün icazəniz yoxdur!");
+        }
+
+        return mapToBookingResponse(booking);
     }
 }

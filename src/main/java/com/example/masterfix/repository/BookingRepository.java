@@ -15,4 +15,5 @@ public interface BookingRepository extends JpaRepository<Booking, Long> {
     List<Booking> findByMaster(Master master);
 
     List<Booking> findByBookingStatus(BookingStatusEnum bookingStatus);
+    List<Booking> getBookingById(Long id);
 }

@@ -4,9 +4,7 @@ import com.example.masterfix.enums.BookingStatusEnum;
 
 import java.time.LocalDateTime;
 
-/**
- * Booking məlumatlarını frontendə qaytarmaq üçün response DTO.
- */
+
 public record BookingResponse(
         Long id,
         String userFullName,

@@ -2,6 +2,7 @@ package com.example.masterfix.controller;
 
 import com.example.masterfix.dto.response.FavoriteResponse;
 import com.example.masterfix.service.FavoriteService;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
@@ -19,7 +20,7 @@ public class FavoriteController {
     @PostMapping("/{masterId}")
     public FavoriteResponse addFavorite(
             Authentication authentication,
-            @PathVariable Long masterId
+            @Valid @PathVariable Long masterId
     ) {
         return favoriteService.addFavorite(authentication, masterId);
     }
@@ -27,7 +28,7 @@ public class FavoriteController {
     @DeleteMapping("/{masterId}")
     public void removeFavorite(
             Authentication authentication,
-            @PathVariable Long masterId
+            @Valid @PathVariable Long masterId
     ) {
         favoriteService.removeFavorite(authentication, masterId);
     }

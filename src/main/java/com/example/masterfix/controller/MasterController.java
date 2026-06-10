@@ -3,15 +3,14 @@ package com.example.masterfix.controller;
 import com.example.masterfix.dto.request.MasterRequest;
 import com.example.masterfix.dto.response.MasterResponse;
 import com.example.masterfix.service.MasterService;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
-/**
- * MasterController usta profilləri üçün API endpointləri saxlayır.
- */
+
 @RestController
 @RequestMapping("/masters")
 @RequiredArgsConstructor
@@ -23,7 +22,7 @@ public class MasterController {
     @PostMapping
     public MasterResponse createMaster(
             Authentication authentication,
-            @RequestBody MasterRequest request
+           @Valid @RequestBody MasterRequest request
     ) {
         return masterService.createMaster(authentication, request);
     }
@@ -43,7 +42,7 @@ public class MasterController {
     @PutMapping("/me")
     public MasterResponse updateMyMasterProfile(
             Authentication authentication,
-            @RequestBody MasterRequest request
+            @Valid @RequestBody MasterRequest request
     ) {
         return masterService.updateMyMasterProfile(authentication, request);
     }
