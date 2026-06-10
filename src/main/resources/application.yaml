@@ -2,16 +2,16 @@ spring:
   application:
     name: masterFix
 
-datasource:
-   url: jdbc:postgresql://localhost:5434/ustafix_db
-   username: postgres
-   password: 12345
+  datasource:
+    url: jdbc:postgresql://localhost:5434/ustafix_db
+    username: postgres
+    password: 12345
 
-jpa:
-   hibernate:
-     ddl-auto: update
-   show-sql: true
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: true
 
 jwt:
-  secret-key: masterfix-secret-key-masterfix-secret-key-masterfix
-  expiration: 86400000
+  secret-key: ${JWT_SECRET_KEY}
+  expiration: ${JWT_EXPIRATION_MS:86400000}
