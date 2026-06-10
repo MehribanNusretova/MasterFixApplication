@@ -1,8 +1,10 @@
 package com.example.masterfix.service;
 
 import com.example.masterfix.dto.request.LoginRequest;
+import com.example.masterfix.dto.request.RefreshTokenRequest;
 import com.example.masterfix.dto.request.RegisterRequest;
 import com.example.masterfix.dto.response.AuthResponse;
+import com.example.masterfix.entity.RefreshToken;
 import com.example.masterfix.entity.User;
 import com.example.masterfix.enums.Role;
 import com.example.masterfix.exception.AccessDeniedException;
@@ -27,6 +29,7 @@ public class AuthService {
     PasswordEncoder passwordEncoder;
     JwtService jwtService;
     AuthenticationManager authenticationManager;
+    RefreshTokenService refreshTokenService;
 
     public AuthResponse register(RegisterRequest request) {
         if(userRepository.existsByEmail(request.email())){
@@ -48,10 +51,13 @@ public class AuthService {
         user.setRole(Role.USER);
         User savedUser = userRepository.save(user);
 
-        String token = jwtService.generateToken(savedUser);
+
+        String accessToken = jwtService.generateToken(savedUser);
+        String refreshToken = refreshTokenService.createRefreshToken(savedUser).getToken();
 
         return new AuthResponse(
-                token,
+                accessToken,
+                refreshToken,
                 savedUser.getEmail(),
                 savedUser.getRole()
         );
@@ -68,10 +74,35 @@ public class AuthService {
         User user = userRepository.findByEmail(request.email())
                 .orElseThrow(() -> new ResourceNotFoundException("User tapılmadı"));
 
-        String token = jwtService.generateToken(user);
+
+
+        String accessToken = jwtService.generateToken(user);
+        String refreshToken = refreshTokenService.createRefreshToken(user).getToken();
 
         return new AuthResponse(
-                token,
+                accessToken,
+                refreshToken,
+                user.getEmail(),
+                user.getRole()
+        );
+    }
+    public AuthResponse refreshToken(RefreshTokenRequest request) {
+
+        RefreshToken oldRefreshToken =
+                refreshTokenService.verifyRefreshToken(request.refreshToken());
+
+        User user = oldRefreshToken.getUser();
+
+        refreshTokenService.revokeRefreshToken(oldRefreshToken);
+
+        String newAccessToken = jwtService.generateToken(user);
+
+        String newRefreshToken =
+                refreshTokenService.createRefreshToken(user).getToken();
+
+        return new AuthResponse(
+                newAccessToken,
+                newRefreshToken,
                 user.getEmail(),
                 user.getRole()
         );
