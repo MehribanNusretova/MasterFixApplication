@@ -16,11 +16,11 @@ import java.util.Collection;
 import java.util.List;
 
 @Entity
+@Table(name = "users")
 @AllArgsConstructor
 @Getter
 @Setter
 @NoArgsConstructor
-
 @FieldDefaults(level = AccessLevel.PRIVATE)
 public class User implements UserDetails {
 
@@ -52,9 +52,8 @@ public class User implements UserDetails {
     @Pattern(regexp = "^(\\+994|0)(10|5[015]|7[07]|99)\\d{7}$", message = "Invalid Azerbaijan phone number format")
     String phone;
 
-    @NotBlank()
-    @Pattern(regexp = "^[a-zA-Z0-9]{6,16}$", message = "Username must be 6-12 alphanumeric characters")
-    @Column(nullable = false)
+    @NotBlank(message = "Şifrə boş ola bilməz")
+    @Column(nullable = false, length = 100)
     String password;
 
     @Enumerated(EnumType.STRING)
@@ -70,11 +69,9 @@ public class User implements UserDetails {
     @UpdateTimestamp
     private LocalDateTime updatedAt;
 
-
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {
-       return List.of(
-                new SimpleGrantedAuthority("ROLE_" + role.name()));
+        return List.of(new SimpleGrantedAuthority("ROLE_" + role.name()));
     }
 
     @Override
@@ -101,5 +98,7 @@ public class User implements UserDetails {
     public boolean isEnabled() {
         return active;
     }
+
+
 }
 
