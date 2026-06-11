@@ -11,6 +11,7 @@ import com.example.masterfix.exception.ResourceNotFoundException;
 import com.example.masterfix.repository.BookingRepository;
 import com.example.masterfix.repository.MasterRepository;
 import com.example.masterfix.repository.UserRepository;
+import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Service;
@@ -104,7 +105,7 @@ public class BookingService {
         return mapToBookingResponse(bookingRepository.save(booking));
     }
 
-
+     @Transactional
     public BookingResponse completeBooking(Authentication authentication, Long bookingId) {
 
         Booking booking = getBookingForCurrentMaster(authentication, bookingId);
