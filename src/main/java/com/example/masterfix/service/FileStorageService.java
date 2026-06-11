@@ -23,11 +23,18 @@ public class FileStorageService {
             "image/png",
             "image/webp"
     );
+    private static final long MAX_FILE_SIZE = 5 * 1024 * 1024;
 
     public String saveImage(MultipartFile image) {
 
         if (image == null || image.isEmpty()) {
             throw new AccessDeniedException("Şəkil boş ola bilməz");
+        }
+
+        if (image.getSize() > MAX_FILE_SIZE) {
+            throw new AccessDeniedException(
+                    "Maksimum fayl ölçüsü 5 MB ola bilər"
+            );
         }
 
         if (!ALLOWED_CONTENT_TYPES.contains(image.getContentType())) {
@@ -57,6 +64,7 @@ public class FileStorageService {
             throw new RuntimeException("Şəkil yüklənərkən xəta baş verdi");
         }
     }
+
 
     private String getFileExtension(String filename) {
 
