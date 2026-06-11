@@ -13,6 +13,7 @@ import com.example.masterfix.exception.AlreadyExistsException;
 import com.example.masterfix.exception.ResourceNotFoundException;
 import com.example.masterfix.repository.UserRepository;
 import com.example.masterfix.security.JwtService;
+import jakarta.transaction.Transactional;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
@@ -34,6 +35,7 @@ public class AuthService {
     EmailService emailService;
     VerificationService verificationService;
 
+    @Transactional
     public AuthResponse register(RegisterRequest request) {
         if(userRepository.existsByEmail(request.email())){
             throw new AlreadyExistsException("Bu email artiq istifade olunur");
