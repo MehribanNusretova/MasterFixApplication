@@ -3,7 +3,8 @@ package com.example.masterfix.repository;
 import com.example.masterfix.entity.Category;
 import com.example.masterfix.entity.Master;
 import com.example.masterfix.entity.User;
-import io.micrometer.common.KeyValues;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 import java.util.List;
@@ -26,4 +27,16 @@ public interface MasterRepository extends JpaRepository<Master, Long> {
     List<Master> findByCategoryIdAndAvailableTrue(Long categoryId);
 
     List<Master> findByCityIgnoreCaseAndCategoryIdAndAvailableTrue(String city, Long categoryId);
+
+    Page<Master> findByAvailableTrue(Pageable pageable);
+
+    Page<Master> findByCityIgnoreCaseAndAvailableTrue(String city, Pageable pageable);
+
+    Page<Master> findByCategoryIdAndAvailableTrue(Long categoryId, Pageable pageable);
+
+    Page<Master> findByCityIgnoreCaseAndCategoryIdAndAvailableTrue(
+            String city,
+            Long categoryId,
+            Pageable pageable
+    );
 }

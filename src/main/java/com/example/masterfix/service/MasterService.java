@@ -12,6 +12,8 @@ import com.example.masterfix.repository.CategoryRepository;
 import com.example.masterfix.repository.MasterRepository;
 import com.example.masterfix.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Service;
 
@@ -154,6 +156,33 @@ public class MasterService {
         return masters.stream()
                 .map(this::mapToMasterResponse)
                 .toList();
+    }
+    public Page<MasterResponse> searchMasters(String city, Long categoryId, Pageable pageable) {
+
+        if (city != null && !city.isBlank() && categoryId != null) {
+            return masterRepository
+                    .findByCityIgnoreCaseAndCategoryIdAndAvailableTrue(city, categoryId, pageable)
+                    .map(this::mapToMasterResponse);
+        }
+
+        if (city != null && !city.isBlank()) {
+            return masterRepository
+                    .findByCityIgnoreCaseAndAvailableTrue(city, pageable)
+                    .map(this::mapToMasterResponse);
+        }
+
+        if (categoryId != null) {
+            return masterRepository
+                    .findByCategoryIdAndAvailableTrue(categoryId, pageable)
+                    .map(this::mapToMasterResponse);
+        }
+
+        return masterRepository.findByAvailableTrue(pageable)
+                .map(this::mapToMasterResponse);
+    }
+    public Page<MasterResponse> getAllMasters(Pageable pageable) {
+        return masterRepository.findByAvailableTrue(pageable)
+                .map(this::mapToMasterResponse);
     }
 
     private MasterResponse mapToMasterResponse(Master master) {

@@ -5,6 +5,9 @@ import com.example.masterfix.dto.response.MasterResponse;
 import com.example.masterfix.service.MasterService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
@@ -29,8 +32,19 @@ public class MasterController {
 
 
     @GetMapping
-    public List<MasterResponse> getAllMasters() {
-        return masterService.getAllMasters();
+    public Page<MasterResponse> getAllMasters(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size,
+            @RequestParam(defaultValue = "id") String sortBy,
+            @RequestParam(defaultValue = "asc") String direction
+    ) {
+        Sort sort = direction.equalsIgnoreCase("desc")
+                ? Sort.by(sortBy).descending()
+                : Sort.by(sortBy).ascending();
+
+        return masterService.getAllMasters(
+                PageRequest.of(page, size, sort)
+        );
     }
 
     @GetMapping("/{id}")
@@ -66,10 +80,22 @@ public class MasterController {
     }
 
     @GetMapping("/search")
-    public List<MasterResponse> searchMasters(
+    public Page<MasterResponse> searchMasters(
             @RequestParam(required = false) String city,
-            @RequestParam(required = false) Long categoryId
+            @RequestParam(required = false) Long categoryId,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size,
+            @RequestParam(defaultValue = "id") String sortBy,
+            @RequestParam(defaultValue = "asc") String direction
     ) {
-        return masterService.searchMasters(city, categoryId);
+        Sort sort = direction.equalsIgnoreCase("desc")
+                ? Sort.by(sortBy).descending()
+                : Sort.by(sortBy).ascending();
+
+        return masterService.searchMasters(
+                city,
+                categoryId,
+                PageRequest.of(page, size, sort)
+        );
     }
 }
