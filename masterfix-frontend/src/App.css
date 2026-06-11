@@ -1,0 +1,16 @@
+/* Tailwind 4 uses @import "tailwindcss" in index.css. 
+   Custom styles for MasterFix can be added here if needed. */
+
+@layer base {
+  body {
+    @apply transition-colors duration-300;
+  }
+}
+
+.glass {
+  @apply bg-white/70 dark:bg-slate-900/70 backdrop-blur-md border border-white/20 dark:border-slate-800/50;
+}
+
+.gradient-text {
+  @apply bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent;
+}

@@ -1,37 +1,33 @@
-HELP.md
+
+
+### Java ###
+*.class
+
+### Gradle ###
 .gradle
-build/
+/build/
 !gradle/wrapper/gradle-wrapper.jar
 !**/src/main/**/build/
 !**/src/test/**/build/
 
-### STS ###
-.apt_generated
-.classpath
-.factorypath
-.project
-.settings
-.springBeans
-.sts4-cache
-bin/
-!**/src/main/**/bin/
-!**/src/test/**/bin/
-
-### IntelliJ IDEA ###
-.idea
+### IDE (IntelliJ IDEA) ###
+.idea/
 *.iws
 *.iml
 *.ipr
-out/
-!**/src/main/**/out/
-!**/src/test/**/out/
+/out/
 
-### NetBeans ###
-/nbproject/private/
-/nbbuild/
-/dist/
-/nbdist/
-/.nb-gradle/
+### OS ###
+.DS_Store
+Thumbs.db
 
-### VS Code ###
-.vscode/
+### Spring Boot & Security ###
+# Təhlükəsizlik üçün həssas konfiqurasiyalar
+application-secret.yml
+application-dev.yml
+.env
+*.log
+
+### Node & Frontend (Əgər eyni repodadırsa) ###
+node_modules/
+dist/
