@@ -10,6 +10,7 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
 
@@ -97,5 +98,13 @@ public class MasterController {
                 categoryId,
                 PageRequest.of(page, size, sort)
         );
+    }
+
+    @PostMapping("/me/profile-image")
+    public MasterResponse uploadProfileImage(
+            Authentication authentication,
+            @RequestParam("image") MultipartFile image
+    ) {
+        return masterService.uploadProfileImage(authentication, image);
     }
 }

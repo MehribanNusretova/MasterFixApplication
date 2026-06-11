@@ -16,6 +16,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Service;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
 
@@ -26,6 +27,7 @@ public class MasterService {
     private final MasterRepository masterRepository;
     private final UserRepository userRepository;
     private final CategoryRepository categoryRepository;
+    private final FileStorageService fileStorageService;
 
     public MasterResponse createMaster(Authentication authentication, MasterRequest request) {
 
@@ -180,9 +182,29 @@ public class MasterService {
         return masterRepository.findByAvailableTrue(pageable)
                 .map(this::mapToMasterResponse);
     }
+
     public Page<MasterResponse> getAllMasters(Pageable pageable) {
         return masterRepository.findByAvailableTrue(pageable)
                 .map(this::mapToMasterResponse);
+    }
+
+    public MasterResponse uploadProfileImage(Authentication authentication, MultipartFile image) {
+
+        String email = authentication.getName();
+
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new ResourceNotFoundException("User tapılmadı"));
+
+        Master master = masterRepository.findByUser(user)
+                .orElseThrow(() -> new ResourceNotFoundException("Master profili tapılmadı"));
+
+        String imageUrl = fileStorageService.saveImage(image);
+
+        master.setProfileImageUrl(imageUrl);
+
+        Master updatedMaster = masterRepository.save(master);
+
+        return mapToMasterResponse(updatedMaster);
     }
 
     private MasterResponse mapToMasterResponse(Master master) {
