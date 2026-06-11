@@ -134,11 +134,24 @@ public class MasterService {
             throw new IllegalArgumentException("Minimum qiymət maksimum qiymətdən böyük ola bilməz!");
         }
     }
-    public List<MasterResponse> searchMasters(Long categoryId, String city) {
-        return masterRepository.findAll()
-                .stream()
-                .filter(master -> categoryId == null || master.getCategory().getId().equals(categoryId))
-                .filter(master -> city == null || city.trim().isEmpty() || master.getCity().equalsIgnoreCase(city.trim()))
+    public List<MasterResponse> searchMasters(String city, Long categoryId) {
+
+        List<Master> masters;
+
+        if (city != null && !city.isBlank() && categoryId != null) {
+            masters = masterRepository
+                    .findByCityIgnoreCaseAndCategoryIdAndAvailableTrue(city, categoryId);
+        } else if (city != null && !city.isBlank()) {
+            masters = masterRepository
+                    .findByCityIgnoreCaseAndAvailableTrue(city);
+        } else if (categoryId != null) {
+            masters = masterRepository
+                    .findByCategoryIdAndAvailableTrue(categoryId);
+        } else {
+            masters = masterRepository.findByAvailableTrue();
+        }
+
+        return masters.stream()
                 .map(this::mapToMasterResponse)
                 .toList();
     }

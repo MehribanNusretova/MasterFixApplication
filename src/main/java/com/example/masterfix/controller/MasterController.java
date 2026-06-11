@@ -64,4 +64,12 @@ public class MasterController {
     public List<MasterResponse> getMastersByCity(@RequestParam String city) {
         return masterService.getMastersByCity(city);
     }
+
+    @GetMapping("/search")
+    public List<MasterResponse> searchMasters(
+            @RequestParam(required = false) String city,
+            @RequestParam(required = false) Long categoryId
+    ) {
+        return masterService.searchMasters(city, categoryId);
+    }
 }

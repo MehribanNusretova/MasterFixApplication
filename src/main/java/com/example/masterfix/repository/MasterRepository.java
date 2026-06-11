@@ -20,4 +20,10 @@ public interface MasterRepository extends JpaRepository<Master, Long> {
     List<Master> findByAvailableTrue();
 
     List<Master> findByCategoryId(Long categoryId);
+
+    List<Master> findByCityIgnoreCaseAndAvailableTrue(String city);
+
+    List<Master> findByCategoryIdAndAvailableTrue(Long categoryId);
+
+    List<Master> findByCityIgnoreCaseAndCategoryIdAndAvailableTrue(String city, Long categoryId);
 }
