@@ -41,4 +41,9 @@ public class AuthController {
     ) {
         return authService.refreshToken(request);
     }
+
+    @GetMapping("/verify")
+    public String verifyAccount(@RequestParam String token) {
+        return authService.verifyAccount(token);
+    }
 }

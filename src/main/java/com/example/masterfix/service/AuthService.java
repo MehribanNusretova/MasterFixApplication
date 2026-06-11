@@ -6,6 +6,7 @@ import com.example.masterfix.dto.request.RegisterRequest;
 import com.example.masterfix.dto.response.AuthResponse;
 import com.example.masterfix.entity.RefreshToken;
 import com.example.masterfix.entity.User;
+import com.example.masterfix.entity.VerificationToken;
 import com.example.masterfix.enums.Role;
 import com.example.masterfix.exception.AccessDeniedException;
 import com.example.masterfix.exception.AlreadyExistsException;
@@ -30,6 +31,8 @@ public class AuthService {
     JwtService jwtService;
     AuthenticationManager authenticationManager;
     RefreshTokenService refreshTokenService;
+    EmailService emailService;
+    VerificationService verificationService;
 
     public AuthResponse register(RegisterRequest request) {
         if(userRepository.existsByEmail(request.email())){
@@ -50,6 +53,14 @@ public class AuthService {
         user.setPassword(passwordEncoder.encode(request.password()));
         user.setRole(Role.USER);
         User savedUser = userRepository.save(user);
+        VerificationToken verificationToken =
+                verificationService.createVerificationToken(savedUser);
+
+        emailService.sendVerificationEmail(
+                savedUser.getEmail(),
+                savedUser.getFirstName(),
+                verificationToken.getToken()
+        );
 
 
         String accessToken = jwtService.generateToken(savedUser);
@@ -74,7 +85,9 @@ public class AuthService {
         User user = userRepository.findByEmail(request.email())
                 .orElseThrow(() -> new ResourceNotFoundException("User tapılmadı"));
 
-
+        if (!user.isVerified()) {
+            throw new AccessDeniedException("Zəhmət olmasa əvvəlcə email ünvanınızı təsdiqləyin");
+        }
 
         String accessToken = jwtService.generateToken(user);
         String refreshToken = refreshTokenService.createRefreshToken(user).getToken();
@@ -85,6 +98,9 @@ public class AuthService {
                 user.getEmail(),
                 user.getRole()
         );
+    }
+    public String verifyAccount(String token) {
+        return verificationService.verifyAccount(token);
     }
     public AuthResponse refreshToken(RefreshTokenRequest request) {
 

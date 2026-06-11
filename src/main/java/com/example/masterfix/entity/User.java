@@ -47,6 +47,9 @@ public class User implements UserDetails {
     @Column(nullable = false, unique = true)
     String email;
 
+    @Column(nullable = false)
+    boolean verified = false;
+
     @NotBlank(message = "Telefon nömrəsi boş ola bilməz")
     @Column(nullable = false, unique = true)
     @Pattern(regexp = "^(\\+994|0)(10|5[015]|7[07]|99)\\d{7}$", message = "Invalid Azerbaijan phone number format")
