@@ -138,27 +138,6 @@ public class MasterService {
             throw new IllegalArgumentException("Minimum qiymət maksimum qiymətdən böyük ola bilməz!");
         }
     }
-    public List<MasterResponse> searchMasters(String city, Long categoryId) {
-
-        List<Master> masters;
-
-        if (city != null && !city.isBlank() && categoryId != null) {
-            masters = masterRepository
-                    .findByCityIgnoreCaseAndCategoryIdAndAvailableTrue(city, categoryId);
-        } else if (city != null && !city.isBlank()) {
-            masters = masterRepository
-                    .findByCityIgnoreCaseAndAvailableTrue(city);
-        } else if (categoryId != null) {
-            masters = masterRepository
-                    .findByCategoryIdAndAvailableTrue(categoryId);
-        } else {
-            masters = masterRepository.findByAvailableTrue();
-        }
-
-        return masters.stream()
-                .map(this::mapToMasterResponse)
-                .toList();
-    }
     public Page<MasterResponse> searchMasters(String city, Long categoryId, Pageable pageable) {
 
         if (city != null && !city.isBlank() && categoryId != null) {

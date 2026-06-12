@@ -26,6 +26,7 @@ public class BookingService {
     private final BookingRepository bookingRepository;
     private final UserRepository userRepository;
     private final MasterRepository masterRepository;
+    private final EmailService emailService;
 
 
     public BookingResponse createBooking(Authentication authentication, BookingRequest request) {
@@ -52,6 +53,22 @@ public class BookingService {
         booking.setBookingStatus(BookingStatusEnum.PENDING);
 
         Booking savedBooking = bookingRepository.save(booking);
+
+        // Ustaya email bildirişi göndər
+        try {
+            emailService.sendBookingNotification(
+                    master.getUser().getEmail(),
+                    master.getUser().getFirstName(),
+                    user.getFirstName() + " " + user.getLastName(),
+                    user.getPhone(),
+                    master.getCategory().getName(),
+                    booking.getAddress(),
+                    booking.getBookingDate().toString(),
+                    booking.getDescription()
+            );
+        } catch (Exception e) {
+            System.err.println("Sifariş emaili göndərilə bilmədi: " + e.getMessage());
+        }
 
         return mapToBookingResponse(savedBooking);
     }
