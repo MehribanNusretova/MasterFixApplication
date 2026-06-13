@@ -57,4 +57,22 @@ public class EmailService {
 
         mailSender.send(message);
     }
+
+    public void sendPasswordResetEmail(String toEmail, String firstName, String token) {
+        String resetLink = "http://localhost:5173/reset-password?token=" + token;
+
+        SimpleMailMessage message = new SimpleMailMessage();
+        message.setTo(toEmail);
+        message.setSubject("Şifrə yeniləmə tələbi - MasterFix");
+        message.setText(
+                "Salam " + firstName + ",\n\n" +
+                "Şifrənizi yeniləmək üçün aşağıdakı linkə daxil olun:\n" +
+                resetLink + "\n\n" +
+                "Bu link 15 dəqiqə ərzində etibarlıdır.\n" +
+                "Əgər şifrə yeniləmə tələbini siz etməmisinizsə, bu emaili görməzdən gəlin.\n\n" +
+                "Hörmətlə,\nMasterFix Team"
+        );
+
+        mailSender.send(message);
+    }
 }
