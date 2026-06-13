@@ -1,15 +1,20 @@
 package com.example.masterfix.service;
 
 import com.example.masterfix.dto.request.MasterRequest;
+import com.example.masterfix.dto.request.PortfolioRequest;
 import com.example.masterfix.dto.response.MasterResponse;
+import com.example.masterfix.dto.response.PortfolioResponse;
 import com.example.masterfix.entity.Category;
 import com.example.masterfix.entity.Master;
+import com.example.masterfix.entity.Portfolio;
 import com.example.masterfix.entity.User;
 import com.example.masterfix.enums.Role;
-import com.example.masterfix.exception.AlreadyExistsException;
+import com.example.masterfix.exception.AccessDeniedException;
 import com.example.masterfix.exception.ResourceNotFoundException;
+import com.example.masterfix.exception.AlreadyExistsException;
 import com.example.masterfix.repository.CategoryRepository;
 import com.example.masterfix.repository.MasterRepository;
+import com.example.masterfix.repository.PortfolioRepository;
 import com.example.masterfix.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -28,6 +33,7 @@ public class MasterService {
     private final UserRepository userRepository;
     private final CategoryRepository categoryRepository;
     private final FileStorageService fileStorageService;
+    private final PortfolioRepository portfolioRepository;
 
     public MasterResponse createMaster(Authentication authentication, MasterRequest request) {
 
@@ -64,6 +70,7 @@ public class MasterService {
         return mapToMasterResponse(savedMaster);
     }
 
+
     public List<MasterResponse> getAllMasters() {
         return masterRepository.findAll()
                 .stream()
@@ -71,6 +78,7 @@ public class MasterService {
                 .map(this::mapToMasterResponse)
                 .toList();
     }
+
 
     public MasterResponse getMasterById(Long id) {
         Master master = masterRepository.findById(id)
@@ -135,7 +143,7 @@ public class MasterService {
 
     private void validateMasterPrices(MasterRequest request) {
         if (request.priceFrom() != null && request.priceTo() != null && request.priceFrom() > request.priceTo()) {
-            throw new IllegalArgumentException("Minimum qiymət maksimum qiymətdən böyük ola bilməz!");
+            throw new IllegalArgumentException("Minimum qiymət maksimum qiymətdən böyük ola bilər!");
         }
     }
     public Page<MasterResponse> searchMasters(String city, Long categoryId, Pageable pageable) {
@@ -178,13 +186,57 @@ public class MasterService {
                 .orElseThrow(() -> new ResourceNotFoundException("Master profili tapılmadı"));
 
         String imageUrl = fileStorageService.saveImage(image);
-
         master.setProfileImageUrl(imageUrl);
 
-        Master updatedMaster = masterRepository.save(master);
-
-        return mapToMasterResponse(updatedMaster);
+        return mapToMasterResponse(masterRepository.save(master));
     }
+
+    public PortfolioResponse addPortfolioItem(Authentication authentication, PortfolioRequest request, MultipartFile file) {
+        String email = authentication.getName();
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new ResourceNotFoundException("User tapılmadı"));
+
+        Master master = masterRepository.findByUser(user)
+                .orElseThrow(() -> new ResourceNotFoundException("Master profili tapılmadı"));
+
+        String mediaUrl = fileStorageService.saveMedia(file);
+        Portfolio portfolio = Portfolio.builder()
+                .master(master)
+                .title(request.title())
+                .description(request.description())
+                .mediaUrl(mediaUrl)
+                .mediaType(request.mediaType())
+                .build();
+
+        Portfolio saved = portfolioRepository.save(portfolio);
+        return mapToPortfolioResponse(saved);
+    }
+
+    public List<PortfolioResponse> getPortfolio(Long masterId) {
+        return portfolioRepository.findByMasterIdOrderByCreatedAtDesc(masterId)
+                .stream()
+                .map(this::mapToPortfolioResponse)
+                .toList();
+    }
+
+    public void deletePortfolioItem(Authentication authentication, Long portfolioId) {
+        String email = authentication.getName();
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new ResourceNotFoundException("User tapılmadı"));
+
+        Master master = masterRepository.findByUser(user)
+                .orElseThrow(() -> new ResourceNotFoundException("Master profili tapılmadı"));
+
+        Portfolio portfolio = portfolioRepository.findById(portfolioId)
+                .orElseThrow(() -> new ResourceNotFoundException("Portfolio tapılmadı"));
+
+        if (!portfolio.getMaster().getId().equals(master.getId())) {
+            throw new AccessDeniedException("Bu portfolio sizə aid deyil");
+        }
+
+        portfolioRepository.delete(portfolio);
+    }
+
 
     private MasterResponse mapToMasterResponse(Master master) {
         return new MasterResponse(
@@ -201,6 +253,17 @@ public class MasterService {
                 master.getAverageRating(),
                 master.getCompletedJobs(),
                 master.getProfileImageUrl()
+        );
+    }
+
+    private PortfolioResponse mapToPortfolioResponse(Portfolio portfolio) {
+        return new PortfolioResponse(
+                portfolio.getId(),
+                portfolio.getTitle(),
+                portfolio.getDescription(),
+                portfolio.getMediaUrl(),
+                portfolio.getMediaType(),
+                portfolio.getCreatedAt()
         );
     }
 }
