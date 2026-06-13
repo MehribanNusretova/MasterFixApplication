@@ -83,6 +83,14 @@ public class BookingController {
         return bookingService.cancelBooking(authentication, id);
     }
 
+    @DeleteMapping("/{id}")
+    public void deleteBooking(
+            Authentication authentication,
+            @PathVariable Long id
+    ) {
+        bookingService.deleteBooking(authentication, id);
+    }
+
     @PatchMapping("/{id}/status")
     public BookingResponse updateBookingStatus(
             Authentication authentication,

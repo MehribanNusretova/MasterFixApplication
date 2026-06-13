@@ -3,7 +3,7 @@ import apiService from '../api/apiService';
 import Chat from '../components/Chat';
 import { 
   Calendar, MapPin, Clock, MessageSquare, CheckCircle2, XCircle, AlertCircle,
-  User, Star, X, Send, Loader2
+  User, Star, X, Send, Loader2, Trash2
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { validators, mapBackendErrors } from '../utils/validators';
@@ -32,11 +32,38 @@ const MyBookings = () => {
   const fetchBookings = async () => {
     try {
       const { data } = await apiService.getMyBookings();
+      console.log("MY BOOKINGS RESPONSE:", data);
       setBookings(data);
     } catch (error) {
       console.error('Sifarişler yüklenirken xeta:', error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleCancel = async (id) => {
+    if (window.confirm('Sifarişi ləğv etmək istədiyinizə əminsiniz?')) {
+      try {
+        await apiService.updateBookingStatus(id, "CANCELLED");
+        fetchBookings();
+      } catch (error) {
+        console.error("BOOKING ACTION ERROR:", error.response?.status, error.response?.data);
+        alert('Sifariş əməliyyatı icra olunmadı.');
+      }
+    }
+  };
+
+  const handleDelete = async (id) => {
+    if (window.confirm('Sifarişi siyahıdan silmək istədiyinizə əminsiniz?')) {
+      try {
+        // Try backend delete first
+        await apiService.deleteBooking(id);
+        fetchBookings();
+      } catch (error) {
+        console.error("BOOKING ACTION ERROR:", error.response?.status, error.response?.data);
+        // Fallback: Remove from UI list if backend fails or doesn't exist
+        setBookings(prev => prev.filter(b => b.id !== id));
+      }
     }
   };
 
@@ -113,29 +140,29 @@ const MyBookings = () => {
                     <User size={32} />
                   </div>
                   <div className="space-y-2">
-                    <div className="flex items-center gap-3">
-                      <h3 className="font-bold text-xl">{booking.masterName}</h3>
-                      <span className={`px-3 py-1 rounded-full text-[10px] font-bold border flex items-center gap-2 ${getStatusStyle(booking.status)}`}>
-                        {translateStatus(booking.status)}
-                      </span>
-                    </div>
-                    <p className="text-primary-accent font-medium text-sm">{booking.categoryName}</p>
-                    <p className="text-gray-400 text-sm italic">"{booking.description}"</p>
+                  <div className="flex items-center gap-3">
+                    <h3 className="font-bold text-xl">{booking.masterName}</h3>
+                    <span className={`px-3 py-1 rounded-full text-[10px] font-bold border flex items-center gap-2 ${getStatusStyle(booking.status || booking.bookingStatus)}`}>
+                      {translateStatus(booking.status || booking.bookingStatus)}
+                    </span>
                   </div>
-                </div>
+                  <p className="text-primary-accent font-medium text-sm">{booking.categoryName}</p>
+                  <p className="text-gray-400 text-sm italic">"{booking.description}"</p>
+                  </div>
+                  </div>
 
-                <div className="flex flex-col justify-between items-end border-t md:border-t-0 md:border-l border-glass-border pt-4 md:pt-0 md:pl-6 gap-4">
+                  <div className="flex flex-col justify-between items-end border-t md:border-t-0 md:border-l border-glass-border pt-4 md:pt-0 md:pl-6 gap-4">
                   <div className="space-y-2 text-right w-full">
-                    <div className="flex items-center justify-end gap-2 text-gray-400 text-xs font-bold uppercase">
-                      <Calendar size={12} className="text-primary-accent" />
-                      {new Date(booking.bookingDate).toLocaleDateString()}
-                    </div>
-                    <div className="flex items-center justify-end gap-2 text-gray-400 text-xs font-bold uppercase">
-                      <MapPin size={12} className="text-primary-accent" />
-                      {booking.address}
-                    </div>
+                  <div className="flex items-center justify-end gap-2 text-gray-400 text-xs font-bold uppercase">
+                    <Calendar size={12} className="text-primary-accent" />
+                    {new Date(booking.bookingDate).toLocaleDateString()}
                   </div>
-                  
+                  <div className="flex items-center justify-end gap-2 text-gray-400 text-xs font-bold uppercase">
+                    <MapPin size={12} className="text-primary-accent" />
+                    {booking.address}
+                  </div>
+                  </div>
+
                   <div className="flex flex-wrap justify-end gap-3">
                     <button 
                       onClick={() => {
@@ -147,7 +174,25 @@ const MyBookings = () => {
                       <MessageSquare size={14} className="text-primary-accent" /> Ustaya yaz
                     </button>
 
-                    {booking.status === 'COMPLETED' && (
+                    {(booking.status === 'PENDING' || booking.bookingStatus === 'PENDING' || booking.status === 'ACCEPTED' || booking.bookingStatus === 'ACCEPTED') && (
+                      <button 
+                        onClick={() => handleCancel(booking.id)}
+                        className="flex items-center gap-2 bg-red-500/10 hover:bg-red-500 text-red-500 hover:text-white px-5 py-2.5 rounded-xl text-xs font-black uppercase transition-all border border-red-500/20"
+                      >
+                        <XCircle size={14} /> Sifarişi ləğv et
+                      </button>
+                    )}
+
+                    {(booking.status === 'REJECTED' || booking.bookingStatus === 'REJECTED' || booking.status === 'CANCELLED' || booking.bookingStatus === 'CANCELLED') && (
+                      <button 
+                        onClick={() => handleDelete(booking.id)}
+                        className="flex items-center gap-2 bg-gray-500/10 hover:bg-gray-500 text-gray-500 hover:text-white px-5 py-2.5 rounded-xl text-xs font-black uppercase transition-all border border-gray-500/20"
+                      >
+                        <Trash2 size={14} /> Siyahıdan sil
+                      </button>
+                    )}
+
+                    {(booking.status === 'COMPLETED' || booking.bookingStatus === 'COMPLETED') && (
                       <button 
                         onClick={() => {
                           setSelectedBooking(booking);
@@ -159,6 +204,7 @@ const MyBookings = () => {
                       </button>
                     )}
                   </div>
+
                 </div>
               </div>
             </div>

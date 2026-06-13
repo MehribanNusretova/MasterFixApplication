@@ -31,11 +31,12 @@ const MasterDashboard = () => {
     setLoading(true);
     try {
       const { data: bData } = await apiService.getMasterBookings();
+      console.log("MASTER BOOKINGS RESPONSE:", bData);
       setBookings(bData);
       
-      const pending = bData.filter(b => b.status === 'PENDING').length;
-      const accepted = bData.filter(b => b.status === 'ACCEPTED').length;
-      const completed = bData.filter(b => b.status === 'COMPLETED').length;
+      const pending = bData.filter(b => (b.status || b.bookingStatus) === 'PENDING').length;
+      const accepted = bData.filter(b => (b.status || b.bookingStatus) === 'ACCEPTED').length;
+      const completed = bData.filter(b => (b.status || b.bookingStatus) === 'COMPLETED').length;
       setStats({ pending, accepted, completed });
 
       // Fetch Portfolio
@@ -56,10 +57,10 @@ const MasterDashboard = () => {
   };
 
   const handleStatusUpdate = async (bookingId, status) => {
-    console.log("UPDATE BOOKING STATUS:", bookingId, status);
+    console.log("BOOKING STATUS UPDATE:", bookingId, status);
     try {
       const response = await apiService.updateBookingStatus(bookingId, status);
-      console.log("STATUS UPDATE RESPONSE:", response.data);
+      console.log("UPDATED BOOKING:", response.data);
       fetchInitialData();
     } catch (error) {
       console.error("Status update error:", error);

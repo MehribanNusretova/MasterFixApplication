@@ -21,6 +21,13 @@ const MasterDetail = () => {
   const [bookingSuccess, setBookingSuccess] = useState(false);
   const [errors, setErrors] = useState({});
 
+  // Review State
+  const [userBookings, setUserBookings] = useState([]);
+  const [completedBooking, setCompletedBooking] = useState(null);
+  const [reviewData, setReviewData] = useState({ rating: 5, comment: '' });
+  const [reviewSaving, setReviewSaving] = useState(false);
+  const [reviewSuccess, setReviewSuccess] = useState(false);
+
   // Booking Form State
   const [bookingData, setBookingData] = useState({
     description: '',
@@ -49,6 +56,17 @@ const MasterDetail = () => {
             setPortfolio(pData.data);
         }
 
+        // Check for completed bookings to allow review
+        if (user) {
+          const { data: myBookings } = await apiService.getMyBookings();
+          const masterBookings = myBookings.filter(b => b.masterId === Number(id));
+          setUserBookings(masterBookings);
+          
+          const completed = masterBookings.find(b => (b.status || b.bookingStatus) === 'COMPLETED');
+          console.log("COMPLETED BOOKING FOR REVIEW:", completed);
+          setCompletedBooking(completed);
+        }
+
       } catch (error) {
         console.error('Master datası yüklenirken xeta:', error);
       } finally {
@@ -56,7 +74,32 @@ const MasterDetail = () => {
       }
     };
     loadMasterData();
-  }, [id]);
+  }, [id, user]);
+
+  const handleReviewSubmit = async (e) => {
+    e.preventDefault();
+    if (!completedBooking) return;
+
+    setReviewSaving(true);
+    setErrors({});
+    try {
+      await apiService.addReview({
+        bookingId: completedBooking.id,
+        rating: reviewData.rating,
+        comment: reviewData.comment
+      });
+      setReviewSuccess(true);
+      setReviewData({ rating: 5, comment: '' });
+      // Refresh reviews
+      const reviewsRes = await apiService.getMasterReviews(id);
+      setReviews(reviewsRes.data);
+    } catch (error) {
+      console.error("Review error:", error);
+      setErrors({ review: error.response?.data?.message || "Rəy göndərilərkən xəta baş verdi." });
+    } finally {
+      setReviewSaving(false);
+    }
+  };
 
   const handleBookingSubmit = async (e) => {
     e.preventDefault();
@@ -157,14 +200,14 @@ const MasterDetail = () => {
             <div className="flex-1 space-y-4">
               <div className="flex flex-wrap justify-between items-start gap-4">
                 <div>
-                  <h1 className="text-3xl font-bold">{master.fullName}</h1>
+                  <h1 className="text-3xl font-bold">{master.fullName || master.name || "Usta"}</h1>
                   <p className="text-primary-accent font-semibold flex items-center gap-2">
-                    <Briefcase size={16} /> {master.categoryName}
+                    <Briefcase size={16} /> {master.categoryName || "Xidmət"}
                   </p>
                 </div>
                 <div className="flex items-center gap-2 bg-glass-hover px-4 py-2 rounded-2xl border border-glass-border">
                   <Star size={20} className="text-yellow-500 fill-yellow-500" />
-                  <span className="text-xl font-bold">{master.averageRating || 'N/A'}</span>
+                  <span className="text-xl font-bold">{master.averageRating || '0'}</span>
                   <span className="text-gray-400 text-sm">({reviews.length} rəy)</span>
                 </div>
               </div>
@@ -172,15 +215,15 @@ const MasterDetail = () => {
               <div className="grid grid-cols-2 md:grid-cols-3 gap-4 py-4 border-y border-glass-border">
                 <div className="space-y-1">
                   <p className="text-[10px] font-bold text-gray-500 uppercase tracking-widest">Təcrübə</p>
-                  <p className="font-bold flex items-center gap-1 text-white"><Award size={14} className="text-primary-accent" /> {master.experienceYear} il</p>
+                  <p className="font-bold flex items-center gap-1 text-white"><Award size={14} className="text-primary-accent" /> {master.experienceYear || 0} il</p>
                 </div>
                 <div className="space-y-1">
                   <p className="text-[10px] font-bold text-gray-500 uppercase tracking-widest">Şəhər</p>
-                  <p className="font-bold flex items-center gap-1 text-white"><MapPin size={14} className="text-primary-accent" /> {master.city}</p>
+                  <p className="font-bold flex items-center gap-1 text-white"><MapPin size={14} className="text-primary-accent" /> {master.city || "Qeyd edilməyib"}</p>
                 </div>
                 <div className="space-y-1">
                   <p className="text-[10px] font-bold text-gray-500 uppercase tracking-widest">Tamamlanmış İş</p>
-                  <p className="font-bold flex items-center gap-1 text-white"><CheckCircle2 size={14} className="text-primary-accent" /> {master.completedJobs}</p>
+                  <p className="font-bold flex items-center gap-1 text-white"><CheckCircle2 size={14} className="text-primary-accent" /> {master.completedJobs || 0}</p>
                 </div>
               </div>
 
@@ -191,6 +234,68 @@ const MasterDetail = () => {
             </div>
           </section>
 
+          {/* Review Section */}
+          <section className="space-y-6">
+            <h2 className="text-2xl font-bold flex items-center gap-3">
+              <Star className="text-primary-accent" />
+              Rəy Yaz
+            </h2>
+
+            {completedBooking ? (
+              <div className="glass-card p-8 space-y-6 border-glass-border">
+                {reviewSuccess ? (
+                  <div className="bg-green-500/10 border border-green-500/20 text-green-500 p-6 rounded-2xl text-center space-y-2 animate-in zoom-in-95">
+                    <CheckCircle2 size={40} className="mx-auto" />
+                    <p className="font-bold text-lg">Rəyiniz uğurla əlavə edildi!</p>
+                  </div>
+                ) : (
+                  <form onSubmit={handleReviewSubmit} className="space-y-6">
+                    <div className="flex justify-center gap-2">
+                      {[1, 2, 3, 4, 5].map((star) => (
+                        <button
+                          key={star}
+                          type="button"
+                          onClick={() => setReviewData({...reviewData, rating: star})}
+                          className="transition-transform active:scale-90"
+                        >
+                          <Star 
+                            size={32} 
+                            className={star <= reviewData.rating ? 'text-yellow-500 fill-yellow-500' : 'text-gray-700'} 
+                          />
+                        </button>
+                      ))}
+                    </div>
+
+                    <div className="space-y-2">
+                      <textarea 
+                        placeholder="Təcrübəniz haqqında yazın..."
+                        className="w-full bg-primary-light/10 border border-glass-border rounded-xl p-4 h-32 outline-none focus:border-primary-accent transition-all resize-none text-white font-medium"
+                        value={reviewData.comment}
+                        onChange={(e) => setReviewData({...reviewData, comment: e.target.value})}
+                        required
+                      ></textarea>
+                      {errors.review && <p className="text-xs text-red-500 font-bold">{errors.review}</p>}
+                    </div>
+
+                    <button 
+                      type="submit"
+                      disabled={reviewSaving}
+                      className="w-full bg-primary-accent hover:bg-primary-light text-white py-4 rounded-xl font-bold transition-all flex items-center justify-center gap-2 shadow-lg shadow-primary-accent/20"
+                    >
+                      {reviewSaving ? <Loader2 className="animate-spin" size={20} /> : <Send size={20} />}
+                      Rəyi Göndər
+                    </button>
+                  </form>
+                )}
+              </div>
+            ) : (
+              <div className="glass-card p-8 text-center bg-yellow-500/5 border border-yellow-500/10 rounded-2xl">
+                <AlertCircle size={32} className="text-yellow-500/50 mx-auto mb-3" />
+                <p className="text-gray-400 font-medium">Rəy yazmaq üçün əvvəlcə sifariş tamamlanmalıdır.</p>
+              </div>
+            )}
+          </section>
+
           {/* Reviews Section */}
           <section className="space-y-6">
             <h2 className="text-2xl font-bold flex items-center gap-3">
@@ -199,27 +304,33 @@ const MasterDetail = () => {
             </h2>
 
             <div className="space-y-4">
-              {reviews.length > 0 ? reviews.map((review) => (
+              {reviews.length > 0 ? reviews.map((review) => {
+                const reviewerName = review.userName || review.customerName || review.fullName || "İstifadəçi";
+                const reviewerInitial = reviewerName.charAt(0).toUpperCase();
+                
+                return (
                 <div key={review.id} className="glass-card p-6 space-y-4 border-l-4 border-primary-accent">
                   <div className="flex justify-between items-center">
                     <div className="flex items-center gap-3">
                       <div className="w-10 h-10 bg-glass-hover border border-glass-border rounded-full flex items-center justify-center font-bold text-primary-accent">
-                        {review.userName.charAt(0).toUpperCase()}
+                        {reviewerInitial}
                       </div>
                       <div>
-                        <p className="font-bold text-white">{review.userName}</p>
-                        <p className="text-[10px] text-gray-500 uppercase font-bold">{new Date(review.createdAt).toLocaleDateString()}</p>
+                        <p className="font-bold text-white">{reviewerName}</p>
+                        <p className="text-[10px] text-gray-500 uppercase font-bold">
+                          {review.createdAt ? new Date(review.createdAt).toLocaleDateString() : ""}
+                        </p>
                       </div>
                     </div>
                     <div className="flex gap-1">
                       {[...Array(5)].map((_, i) => (
-                        <Star key={i} size={12} className={i < review.rating ? 'text-yellow-500 fill-yellow-500' : 'text-gray-700'} />
+                        <Star key={i} size={12} className={i < (review.rating || 0) ? 'text-yellow-500 fill-yellow-500' : 'text-gray-700'} />
                       ))}
                     </div>
                   </div>
-                  <p className="text-gray-300 italic text-sm">"{review.comment}"</p>
+                  <p className="text-gray-300 italic text-sm">"{review.comment || "Rəy mətni yoxdur"}"</p>
                 </div>
-              )) : (
+              )}) : (
                 <div className="glass-card p-12 text-center text-gray-500 italic">Hələ rəy yazılmayıb. İlk rəyi siz yazın!</div>
               )}
             </div>
@@ -234,9 +345,10 @@ const MasterDetail = () => {
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {portfolio.length > 0 ? portfolio.map((item) => {
-                const fullUrl = item.mediaUrl.startsWith("http") 
-                  ? item.mediaUrl 
-                  : `http://localhost:8080${item.mediaUrl}`;
+                const mediaUrl = item.mediaUrl || "";
+                const fullUrl = mediaUrl.startsWith("http") 
+                  ? mediaUrl 
+                  : `http://localhost:8080${mediaUrl}`;
 
                 return (
                   <div key={item.id} className="glass-card overflow-hidden group border-glass-border bg-glass-bg">
@@ -245,7 +357,7 @@ const MasterDetail = () => {
                         <img 
                           src={fullUrl} 
                           className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" 
-                          alt={item.title} 
+                          alt={item.title || "Əl işi"} 
                         />
                       ) : (
                         <video 
@@ -256,8 +368,8 @@ const MasterDetail = () => {
                       )}
                     </div>
                     <div className="p-4 space-y-1">
-                      <h4 className="font-bold text-white">{item.title}</h4>
-                      <p className="text-xs text-gray-400 line-clamp-2">{item.description}</p>
+                      <h4 className="font-bold text-white">{item.title || "Adsız"}</h4>
+                      <p className="text-xs text-gray-400 line-clamp-2">{item.description || "Açıqlama yoxdur"}</p>
                     </div>
                   </div>
                 );
