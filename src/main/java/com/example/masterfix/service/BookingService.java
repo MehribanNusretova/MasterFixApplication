@@ -26,6 +26,7 @@ public class BookingService {
     private final BookingRepository bookingRepository;
     private final UserRepository userRepository;
     private final MasterRepository masterRepository;
+    private final EmailService emailService;
 
 
     public BookingResponse createBooking(Authentication authentication, BookingRequest request) {
@@ -52,6 +53,22 @@ public class BookingService {
         booking.setBookingStatus(BookingStatusEnum.PENDING);
 
         Booking savedBooking = bookingRepository.save(booking);
+
+        // Ustaya email bildirişi göndər
+        try {
+            emailService.sendBookingNotification(
+                    master.getUser().getEmail(),
+                    master.getUser().getFirstName(),
+                    user.getFirstName() + " " + user.getLastName(),
+                    user.getPhone(),
+                    master.getCategory().getName(),
+                    booking.getAddress(),
+                    booking.getBookingDate().toString(),
+                    booking.getDescription()
+            );
+        } catch (Exception e) {
+            System.err.println("Sifariş emaili göndərilə bilmədi: " + e.getMessage());
+        }
 
         return mapToBookingResponse(savedBooking);
     }
@@ -87,18 +104,28 @@ public class BookingService {
     }
 
 
+    @Transactional
     public BookingResponse acceptBooking(Authentication authentication, Long bookingId) {
 
         Booking booking = getBookingForCurrentMaster(authentication, bookingId);
+        
+        if (booking.getBookingStatus() != BookingStatusEnum.PENDING) {
+            throw new com.example.masterfix.exception.BadRequestException("Yalnız PENDING statusunda olan sifarişlər qəbul edilə bilər");
+        }
 
         booking.setBookingStatus(BookingStatusEnum.ACCEPTED);
 
         return mapToBookingResponse(bookingRepository.save(booking));
     }
 
+    @Transactional
     public BookingResponse rejectBooking(Authentication authentication, Long bookingId) {
 
         Booking booking = getBookingForCurrentMaster(authentication, bookingId);
+
+        if (booking.getBookingStatus() != BookingStatusEnum.PENDING) {
+            throw new com.example.masterfix.exception.BadRequestException("Yalnız PENDING statusunda olan sifarişlər rədd edilə bilər");
+        }
 
         booking.setBookingStatus(BookingStatusEnum.REJECTED);
 
@@ -110,6 +137,10 @@ public class BookingService {
 
         Booking booking = getBookingForCurrentMaster(authentication, bookingId);
 
+        if (booking.getBookingStatus() != BookingStatusEnum.ACCEPTED) {
+            throw new com.example.masterfix.exception.BadRequestException("Yalnız ACCEPTED statusunda olan sifarişlər tamamlana bilər");
+        }
+
         booking.setBookingStatus(BookingStatusEnum.COMPLETED);
 
         Master master = booking.getMaster();
@@ -120,6 +151,7 @@ public class BookingService {
     }
 
 
+    @Transactional
     public BookingResponse cancelBooking(Authentication authentication, Long bookingId) {
 
         String email = authentication.getName();
@@ -133,10 +165,35 @@ public class BookingService {
         if (!booking.getUser().getId().equals(user.getId())) {
             throw new AccessDeniedException("Bu sifariş sizə aid deyil");
         }
+        
+        if (booking.getBookingStatus() == BookingStatusEnum.COMPLETED) {
+            throw new com.example.masterfix.exception.BadRequestException("Tamamlanmış sifarişi ləğv etmək olmaz");
+        }
 
         booking.setBookingStatus(BookingStatusEnum.CANCELLED);
 
         return mapToBookingResponse(bookingRepository.save(booking));
+    }
+
+    @Transactional
+    public void deleteBooking(Authentication authentication, Long bookingId) {
+        String email = authentication.getName();
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new ResourceNotFoundException("User tapılmadı"));
+
+        Booking booking = bookingRepository.findById(bookingId)
+                .orElseThrow(() -> new ResourceNotFoundException("Booking tapılmadı"));
+
+        if (!booking.getUser().getId().equals(user.getId())) {
+            throw new AccessDeniedException("Bu sifariş sizə aid deyil");
+        }
+
+        if (booking.getBookingStatus() != BookingStatusEnum.CANCELLED && 
+            booking.getBookingStatus() != BookingStatusEnum.REJECTED) {
+            throw new com.example.masterfix.exception.BadRequestException("Yalnız ləğv edilmiş və ya rədd edilmiş sifarişləri silmək olar");
+        }
+
+        bookingRepository.delete(booking);
     }
 
 
@@ -165,6 +222,7 @@ public class BookingService {
                 booking.getId(),
                 booking.getUser().getFirstName() + " " + booking.getUser().getLastName(),
                 booking.getMaster().getUser().getFirstName() + " " + booking.getMaster().getUser().getLastName(),
+                booking.getMaster().getId(),
                 booking.getMaster().getCategory().getName(),
                 booking.getDescription(),
                 booking.getAddress(),

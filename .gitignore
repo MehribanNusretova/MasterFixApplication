@@ -31,3 +31,4 @@ application-dev.yml
 ### Node & Frontend (Əgər eyni repodadırsa) ###
 node_modules/
 dist/
+uploads/

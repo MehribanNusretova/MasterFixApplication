@@ -3,7 +3,9 @@ package com.example.masterfix.service;
 import com.example.masterfix.dto.request.LoginRequest;
 import com.example.masterfix.dto.request.RefreshTokenRequest;
 import com.example.masterfix.dto.request.RegisterRequest;
+import com.example.masterfix.dto.request.ResetPasswordRequest;
 import com.example.masterfix.dto.response.AuthResponse;
+import com.example.masterfix.entity.PasswordResetToken;
 import com.example.masterfix.entity.RefreshToken;
 import com.example.masterfix.entity.User;
 import com.example.masterfix.entity.VerificationToken;
@@ -11,6 +13,7 @@ import com.example.masterfix.enums.Role;
 import com.example.masterfix.exception.AccessDeniedException;
 import com.example.masterfix.exception.AlreadyExistsException;
 import com.example.masterfix.exception.ResourceNotFoundException;
+import com.example.masterfix.repository.PasswordResetTokenRepository;
 import com.example.masterfix.repository.UserRepository;
 import com.example.masterfix.security.JwtService;
 import jakarta.transaction.Transactional;
@@ -21,6 +24,9 @@ import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+
+import java.time.LocalDateTime;
+import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
@@ -34,6 +40,7 @@ public class AuthService {
     RefreshTokenService refreshTokenService;
     EmailService emailService;
     VerificationService verificationService;
+    PasswordResetTokenRepository passwordResetTokenRepository;
 
     @Transactional
     public AuthResponse register(RegisterRequest request) {
@@ -88,7 +95,7 @@ public class AuthService {
                 .orElseThrow(() -> new ResourceNotFoundException("User tapılmadı"));
 
         if (!user.isVerified()) {
-            throw new AccessDeniedException("Zəhmət olmasa əvvəlcə email ünvanınızı təsdiqləyin");
+            throw new AccessDeniedException("Zəhmət olmasa əvvəl email ünvanınızı təsdiqləyin");
         }
 
         String accessToken = jwtService.generateToken(user);
@@ -124,5 +131,42 @@ public class AuthService {
                 user.getEmail(),
                 user.getRole()
         );
+    }
+
+    @Transactional
+    public void forgotPassword(String email) {
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new ResourceNotFoundException("Bu email ünvanı ilə istifadəçi tapılmadı"));
+
+        // Köhnə tokenləri təmizlə
+        passwordResetTokenRepository.deleteByUser(user);
+
+        String token = UUID.randomUUID().toString();
+        PasswordResetToken resetToken = PasswordResetToken.builder()
+                .token(token)
+                .user(user)
+                .expiryDate(LocalDateTime.now().plusMinutes(15))
+                .build();
+
+        passwordResetTokenRepository.save(resetToken);
+
+        emailService.sendPasswordResetEmail(user.getEmail(), user.getFirstName(), token);
+    }
+
+    @Transactional
+    public void resetPassword(ResetPasswordRequest request) {
+        PasswordResetToken resetToken = passwordResetTokenRepository.findByToken(request.token())
+                .orElseThrow(() -> new ResourceNotFoundException("Yanlış və ya keçərsiz token"));
+
+        if (resetToken.isExpired()) {
+            passwordResetTokenRepository.delete(resetToken);
+            throw new AccessDeniedException("Tokenin vaxtı bitib, zəhmət olmasa yenidən cəhd edin");
+        }
+
+        User user = resetToken.getUser();
+        user.setPassword(passwordEncoder.encode(request.newPassword()));
+        userRepository.save(user);
+
+        passwordResetTokenRepository.delete(resetToken);
     }
 }
