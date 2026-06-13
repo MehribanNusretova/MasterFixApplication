@@ -113,6 +113,16 @@ const Login = () => {
             </div>
           </div>
 
+          <div className="flex items-center justify-between text-sm">
+            <label className="flex items-center gap-2 cursor-pointer group">
+              <input type="checkbox" className="w-4 h-4 rounded border-glass-border bg-glass-bg text-primary-accent focus:ring-primary-accent" />
+              <span className="text-gray-400 group-hover:text-gray-300 font-medium transition-colors">Məni xatırla</span>
+            </label>
+            <Link to="/forgot-password" size={18} className="text-primary-accent hover:text-primary-light transition-colors font-bold">
+              Şifrəni unutmusunuz?
+            </Link>
+          </div>
+
           <button
             type="submit"
             disabled={loading}

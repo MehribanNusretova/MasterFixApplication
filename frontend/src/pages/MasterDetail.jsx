@@ -15,6 +15,7 @@ const MasterDetail = () => {
   
   const [master, setMaster] = useState(null);
   const [reviews, setReviews] = useState([]);
+  const [portfolio, setPortfolio] = useState([]);
   const [loading, setLoading] = useState(true);
   const [bookingLoading, setBookingLoading] = useState(false);
   const [bookingSuccess, setBookingSuccess] = useState(false);
@@ -30,12 +31,24 @@ const MasterDetail = () => {
   useEffect(() => {
     const loadMasterData = async () => {
       try {
-        const [masterRes, reviewsRes] = await Promise.all([
+        const [masterRes, reviewsRes, portfolioRes] = await Promise.all([
           apiService.getMasterById(id),
-          apiService.getMasterReviews(id)
+          apiService.getMasterReviews(id),
+          apiService.getMasterPortfolio(id)
         ]);
         setMaster(masterRes.data);
         setReviews(reviewsRes.data);
+
+        console.log("PORTFOLIO RESPONSE:", portfolioRes.data);
+        const pData = portfolioRes.data;
+        if (Array.isArray(pData)) {
+            setPortfolio(pData);
+        } else if (pData?.content && Array.isArray(pData.content)) {
+            setPortfolio(pData.content);
+        } else if (pData?.data && Array.isArray(pData.data)) {
+            setPortfolio(pData.data);
+        }
+
       } catch (error) {
         console.error('Master datası yüklenirken xeta:', error);
       } finally {
@@ -63,11 +76,28 @@ const MasterDetail = () => {
 
     setBookingLoading(true);
     try {
+      // Ensure date is in YYYY-MM-DDTHH:mm:ss format
+      let formattedDate = bookingData.bookingDate;
+      if (formattedDate && !formattedDate.includes('T')) {
+          // If it's just a date, append time
+          formattedDate += 'T12:00:00';
+      } else if (formattedDate && formattedDate.length === 16) {
+          // If it's YYYY-MM-DDTHH:mm, append :00
+          formattedDate += ':00';
+      }
+
       const payload = {
         masterId: Number(id),
-        ...bookingData,
-        bookingDate: new Date(bookingData.bookingDate).toISOString()
+        description: bookingData.description,
+        address: bookingData.address,
+        bookingDate: formattedDate
       };
+
+      if (!payload.description || !payload.address || !payload.bookingDate || !payload.masterId) {
+          setErrors({ global: "Sifariş məlumatlarını tam doldurun." });
+          setBookingLoading(false);
+          return;
+      }
 
       console.log("Booking payload:", payload);
       await apiService.createBooking(payload);
@@ -77,7 +107,13 @@ const MasterDetail = () => {
       setBookingData({ description: '', address: '', bookingDate: '' });
     } catch (error) {
       console.log("Backend validation errors:", error.response?.data);
-      setErrors(mapBackendErrors(error.response?.data));
+      const backendErrors = error.response?.data;
+      if (backendErrors && typeof backendErrors === 'object') {
+          setErrors(mapBackendErrors(backendErrors));
+          setErrors(prev => ({ ...prev, global: "Sifariş məlumatlarını tam doldurun." }));
+      } else {
+          setErrors({ global: "Sifariş zamanı xəta baş verdi. Zəhmət olmasa yenidən yoxlayın." });
+      }
     } finally {
       setBookingLoading(false);
     }
@@ -188,6 +224,50 @@ const MasterDetail = () => {
               )}
             </div>
           </section>
+
+          {/* Portfolio Section */}
+          <section className="space-y-6">
+            <h2 className="text-2xl font-bold flex items-center gap-3">
+              <Award className="text-primary-accent" />
+              Ustanın Əl İşləri
+            </h2>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {portfolio.length > 0 ? portfolio.map((item) => {
+                const fullUrl = item.mediaUrl.startsWith("http") 
+                  ? item.mediaUrl 
+                  : `http://localhost:8080${item.mediaUrl}`;
+
+                return (
+                  <div key={item.id} className="glass-card overflow-hidden group border-glass-border bg-glass-bg">
+                    <div className="aspect-video relative overflow-hidden bg-black flex items-center justify-center">
+                      {item.mediaType === 'IMAGE' ? (
+                        <img 
+                          src={fullUrl} 
+                          className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" 
+                          alt={item.title} 
+                        />
+                      ) : (
+                        <video 
+                          controls 
+                          src={fullUrl} 
+                          className="w-full h-full object-cover"
+                        ></video>
+                      )}
+                    </div>
+                    <div className="p-4 space-y-1">
+                      <h4 className="font-bold text-white">{item.title}</h4>
+                      <p className="text-xs text-gray-400 line-clamp-2">{item.description}</p>
+                    </div>
+                  </div>
+                );
+              }) : (
+                <div className="col-span-full glass-card p-12 text-center text-gray-500 italic">
+                  Bu usta hələ əl işi əlavə etməyib.
+                </div>
+              )}
+            </div>
+          </section>
         </div>
 
         {/* Right Column - Booking Form */}
@@ -198,10 +278,17 @@ const MasterDetail = () => {
               <p className="text-sm text-gray-400">Təxmini qiymət: <span className="text-white font-black">{master.priceFrom}₼ - {master.priceTo}₼</span></p>
             </div>
 
+            {errors.global && (
+              <div className="bg-red-500/10 border border-red-500/20 text-red-500 p-4 rounded-xl text-sm flex items-center gap-2 animate-in zoom-in-95 font-bold">
+                <AlertCircle size={18} />
+                {errors.global}
+              </div>
+            )}
+
             {bookingSuccess && (
               <div className="bg-green-500/10 border border-green-500/20 text-green-500 p-4 rounded-xl text-sm flex items-center gap-2 animate-in zoom-in-95 font-bold">
                 <CheckCircle2 size={18} />
-                Sifariş yaradıldı və ustaya email göndərildi.
+                Sifarişiniz uğurla yaradıldı.
               </div>
             )}
 

@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import apiService from '../api/apiService';
+import Chat from '../components/Chat';
 import { 
   Calendar, MapPin, Clock, MessageSquare, CheckCircle2, XCircle, AlertCircle,
   User, Star, X, Send, Loader2
@@ -11,6 +12,10 @@ const MyBookings = () => {
   const [bookings, setBookings] = useState([]);
   const [loading, setLoading] = useState(true);
   const { user } = useAuth();
+
+  // Chat State
+  const [isChatOpen, setIsChatOpen] = useState(false);
+  const [activeChatBooking, setActiveChatBooking] = useState(null);
 
   // Review Modal State
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -131,17 +136,29 @@ const MyBookings = () => {
                     </div>
                   </div>
                   
-                  {booking.status === 'COMPLETED' && (
+                  <div className="flex flex-wrap justify-end gap-3">
                     <button 
                       onClick={() => {
-                        setSelectedBooking(booking);
-                        setIsModalOpen(true);
+                        setActiveChatBooking(booking);
+                        setIsChatOpen(true);
                       }}
-                      className="flex items-center gap-2 bg-primary-accent/10 hover:bg-primary-accent text-primary-accent hover:text-white px-5 py-2.5 rounded-xl text-xs font-black uppercase transition-all active:scale-95 shadow-lg border border-primary-accent/20"
+                      className="flex items-center gap-2 bg-glass-hover hover:bg-glass-border text-gray-300 px-5 py-2.5 rounded-xl text-xs font-black uppercase transition-all border border-glass-border"
                     >
-                      <Star size={14} className="fill-current" /> Rəy yaz
+                      <MessageSquare size={14} className="text-primary-accent" /> Ustaya yaz
                     </button>
-                  )}
+
+                    {booking.status === 'COMPLETED' && (
+                      <button 
+                        onClick={() => {
+                          setSelectedBooking(booking);
+                          setIsModalOpen(true);
+                        }}
+                        className="flex items-center gap-2 bg-primary-accent/10 hover:bg-primary-accent text-primary-accent hover:text-white px-5 py-2.5 rounded-xl text-xs font-black uppercase transition-all active:scale-95 shadow-lg border border-primary-accent/20"
+                      >
+                        <Star size={14} className="fill-current" /> Rəy yaz
+                      </button>
+                    )}
+                  </div>
                 </div>
               </div>
             </div>
@@ -223,6 +240,18 @@ const MyBookings = () => {
             </form>
           </div>
         </div>
+      )}
+
+      {/* Chat Modal */}
+      {isChatOpen && activeChatBooking && (
+        <Chat 
+          bookingId={activeChatBooking.id}
+          recipientName={activeChatBooking.masterName}
+          onClose={() => {
+            setIsChatOpen(false);
+            setActiveChatBooking(null);
+          }}
+        />
       )}
     </div>
   );

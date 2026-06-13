@@ -5,6 +5,8 @@ const apiService = {
   login: (data) => api.post('/auth/login', data),
   register: (data) => api.post('/auth/register', data),
   verifyEmail: (token) => api.get(`/auth/verify?token=${token}`),
+  forgotPassword: (data) => api.post('/auth/forgot-password', data),
+  resetPassword: (data) => api.post('/auth/reset-password', data),
 
   // Categories
   getCategories: () => api.get('/categories'),
@@ -13,8 +15,6 @@ const apiService = {
   getMasters: (params) => api.get('/masters', { params }),
   searchMasters: (params) => api.get('/masters/search', { params }),
   getMasterById: (id) => api.get(`/masters/${id}`),
-  
-  // Master Profile Actions
   createMaster: (data) => api.post('/masters', data),
   updateMyMasterProfile: (data) => api.put('/masters/me', data),
   uploadMasterImage: (formData) => api.post('/masters/me/profile-image', formData),
@@ -26,6 +26,17 @@ const apiService = {
   acceptBooking: (id) => api.put(`/bookings/${id}/accept`),
   rejectBooking: (id) => api.put(`/bookings/${id}/reject`),
   completeBooking: (id) => api.put(`/bookings/${id}/complete`),
+  cancelBooking: (id) => api.put(`/bookings/${id}/cancel`),
+  updateBookingStatus: (id, status) => api.patch(`/bookings/${id}/status`, { status }),
+  getBookingMessages: (bookingId) => api.get(`/bookings/${bookingId}/messages`),
+  sendBookingMessage: (bookingId, content) => api.post(`/bookings/${bookingId}/messages`, { content }),
+
+  // Portfolio
+  addPortfolioItem: (formData) => api.post('/masters/me/portfolio', formData, {
+    headers: { 'Content-Type': 'multipart/form-data' }
+  }),
+  getMasterPortfolio: (masterId) => api.get(`/masters/${masterId}/portfolio`),
+  deletePortfolioItem: (id) => api.delete(`/masters/me/portfolio/${id}`),
 
   // Favorites
   getFavorites: () => api.get('/favorites/my'),
@@ -36,10 +47,9 @@ const apiService = {
   getMasterReviews: (masterId) => api.get(`/reviews/master/${masterId}`),
   addReview: (data) => api.post('/reviews', data),
 
-  // Profile Management (Stable Endpoint)
+  // Users
   getMyProfile: () => api.get('/users/me'),
   updateProfile: (data) => api.put('/users/me', data),
-  
   getAllUsers: () => api.get('/users'),
 };
 

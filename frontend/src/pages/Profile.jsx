@@ -49,9 +49,14 @@ const Profile = () => {
       ]);
 
       const userData = userRes.data;
-      setProfileForm(userData);
+      
+      // Merge with localStorage if needed to keep profileImageUrl if it's there
+      const cached = JSON.parse(localStorage.getItem("user") || "{}");
+      const mergedData = { ...userData, ...cached, ...userData }; 
+      
+      setProfileForm(mergedData);
       setIsMaster(userData.role === 'MASTER');
-      localStorage.setItem("user", JSON.stringify(userData));
+      localStorage.setItem("user", JSON.stringify(mergedData));
 
       // Handle real categories only. No fake IDs for registration.
       let apiCats = [];
@@ -85,6 +90,41 @@ const Profile = () => {
     reader.readAsDataURL(file);
   };
 
+  const handleUploadImage = async () => {
+    if (!selectedImage) return;
+    
+    setProfileSaving(true);
+    const formData = new FormData();
+    formData.append('image', selectedImage);
+    
+    const url = "/masters/me/profile-image";
+    console.log("PROFILE IMAGE UPLOAD URL:", url);
+
+    try {
+      const res = await apiService.uploadMasterImage(formData);
+      // Backend response can have profileImageUrl or imageUrl
+      const newImgUrl = res.data.profileImageUrl || res.data.imageUrl || res.data.avatarUrl;
+      
+      if (newImgUrl) {
+        const stored = JSON.parse(localStorage.getItem("user") || "{}");
+        const updatedUser = { ...stored, profileImageUrl: newImgUrl };
+        localStorage.setItem("user", JSON.stringify(updatedUser));
+        
+        setProfileForm(prev => ({ ...prev, profileImageUrl: newImgUrl }));
+        setMessage({ type: 'success', text: 'Profil şəkli uğurla yeniləndi' });
+        setImagePreview(null);
+        setSelectedImage(null);
+      } else {
+        setMessage({ type: 'error', text: 'Şəkil yükləndi, amma backend şəkil linki qaytarmadı.' });
+      }
+    } catch (error) {
+      console.error("Image upload error:", error);
+      setMessage({ type: 'error', text: 'Şəkil yüklənərkən xəta baş verdi' });
+    } finally {
+      setProfileSaving(false);
+    }
+  };
+
   const handleUpdateProfile = async (e) => {
     e.preventDefault();
     setUserErrors({});
@@ -102,20 +142,7 @@ const Profile = () => {
         phone: profileForm.phone
       });
 
-      if (selectedImage && isMaster) {
-        const formData = new FormData();
-        formData.append('image', selectedImage);
-        const imgRes = await apiService.uploadMasterImage(formData);
-        const newImgUrl = imgRes.data.profileImageUrl || imgRes.data.imageUrl;
-        if (newImgUrl) {
-           const stored = JSON.parse(localStorage.getItem("user") || "{}");
-           localStorage.setItem("user", JSON.stringify({...stored, profileImageUrl: newImgUrl}));
-        }
-      }
-
       setMessage({ type: 'success', text: 'Profil məlumatları yeniləndi' });
-      setImagePreview(null);
-      setSelectedImage(null);
       loadAllData();
     } catch (err) {
       setUserErrors(mapBackendErrors(err.response?.data));
@@ -217,10 +244,38 @@ const Profile = () => {
                 <img src={avatarUrl} className="w-full h-full object-cover" alt="Avatar" />
               </div>
               {isMaster && (
-                <label className="absolute -bottom-2 -right-2 p-2.5 bg-primary-accent text-white rounded-xl cursor-pointer shadow-lg border-4 border-[#1a0505] hover:bg-primary-light active:scale-90 transition-all">
-                  <Camera size={20} />
+                <label className="absolute -bottom-2 -right-2 p-2 bg-primary-accent text-white rounded-xl cursor-pointer shadow-lg border-4 border-[#1a0505] hover:bg-primary-light transition-all">
+                  <Camera size={18} />
                   <input type="file" className="hidden" accept="image/*" onChange={handleImageSelect} />
                 </label>
+              )}
+            </div>
+
+            <div className="space-y-2">
+              {isMaster && !selectedImage && (
+                <label className="block w-full py-2.5 bg-glass-hover hover:bg-glass-border text-gray-300 rounded-xl font-bold cursor-pointer transition-all text-xs border border-glass-border">
+                  Profil şəklini dəyiş
+                  <input type="file" className="hidden" accept="image/*" onChange={handleImageSelect} />
+                </label>
+              )}
+
+              {selectedImage && (
+                <div className="flex gap-2 animate-in zoom-in-95">
+                  <button 
+                    onClick={handleUploadImage}
+                    disabled={profileSaving}
+                    className="flex-1 py-2.5 bg-primary-accent hover:bg-primary-light text-white rounded-xl font-bold transition-all flex items-center justify-center gap-2 text-xs shadow-lg shadow-primary-accent/20"
+                  >
+                    {profileSaving ? <Loader2 className="animate-spin" size={14} /> : <Save size={14} />}
+                    Saxla
+                  </button>
+                  <button 
+                    onClick={() => { setSelectedImage(null); setImagePreview(null); }}
+                    className="p-2.5 bg-red-500/10 text-red-500 rounded-xl hover:bg-red-500 hover:text-white transition-all border border-red-500/20"
+                  >
+                    <X size={14} />
+                  </button>
+                </div>
               )}
             </div>
 
