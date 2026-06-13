@@ -48,6 +48,9 @@ public class Booking {
     @Column(nullable = false)
     BookingStatusEnum bookingStatus = BookingStatusEnum.PENDING;
 
+    @Column(nullable = false, columnDefinition = "BOOLEAN DEFAULT FALSE")
+    boolean hiddenByUser = false;
+
     @CreationTimestamp
     LocalDateTime createdAt;
 

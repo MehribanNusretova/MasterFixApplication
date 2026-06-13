@@ -8,7 +8,7 @@ public record ResetPasswordRequest(
         String token,
 
         @NotBlank(message = "Yeni şifrə boş ola bilməz")
-        @Size(min = 6, message = "Şifrə ən azı 6 simvoldan ibarət olmalıdır")
+        @Size(min = 8, message = "Şifrə minimum 8 simvol olmalıdır")
         String newPassword
 ) {
 }

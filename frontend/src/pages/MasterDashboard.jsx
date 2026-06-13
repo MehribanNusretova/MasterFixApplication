@@ -64,13 +64,19 @@ const MasterDashboard = () => {
       fetchInitialData();
     } catch (error) {
       console.error("Status update error:", error);
-      alert('Sifariş statusu yenilənmədi.');
+      // Detailed error log instead of generic alert
+      const statusMsg = error.response?.data?.message || 'Sifariş statusu yenilənmədi.';
+      console.error("BOOKING ACTION ERROR:", error.response?.status, error.response?.data);
     }
   };
 
   const handleMediaSelect = (e) => {
     const file = e.target.files[0];
     if (file) {
+      if (file.size > 10 * 1024 * 1024) {
+          alert("Fayl ölçüsü 10MB-dan çox ola bilməz.");
+          return;
+      }
       setSelectedMedia(file);
       const reader = new FileReader();
       reader.onloadend = () => setMediaPreview(reader.result);
@@ -78,9 +84,17 @@ const MasterDashboard = () => {
     }
   };
 
+  const [portfolioErrors, setPortfolioErrors] = useState({});
+
   const handlePortfolioSubmit = async (e) => {
     e.preventDefault();
-    if (!selectedMedia) return;
+    setPortfolioErrors({});
+
+    const vErrors = validators.portfolio({ ...portfolioForm, file: selectedMedia });
+    if (Object.keys(vErrors).length > 0) {
+      setPortfolioErrors(vErrors);
+      return;
+    }
 
     setPortfolioSaving(true);
     const formData = new FormData();
@@ -101,7 +115,11 @@ const MasterDashboard = () => {
       setSelectedMedia(null);
       fetchInitialData();
     } catch (error) {
-      alert('Portfolio əlavə edilmədi');
+      console.error("Portfolio error:", error);
+      setPortfolioErrors(mapBackendErrors(error.response?.data));
+      if (!Object.keys(mapBackendErrors(error.response?.data)).length) {
+          setPortfolioErrors({ global: "Portfolio əlavə edilmədi" });
+      }
     } finally {
       setPortfolioSaving(false);
     }

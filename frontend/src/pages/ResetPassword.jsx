@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useNavigate, useSearchParams, Link } from 'react-router-dom';
 import { Lock, CheckCircle2, AlertCircle, Loader2, Save, ArrowLeft } from 'lucide-react';
 import apiService from '../api/apiService';
+import { validators, mapBackendErrors } from '../utils/validators';
 
 const ResetPassword = () => {
   const [searchParams] = useSearchParams();
@@ -14,25 +15,22 @@ const ResetPassword = () => {
   });
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
-  const [error, setError] = useState('');
+  const [errors, setErrors] = useState({});
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setError('');
+    setErrors({});
 
     if (!token) {
-        setError('Token tapılmadı. Zəhmət olmasa emailinizdəki linkə yenidən daxil olun.');
+        setErrors({ form: 'Token tapılmadı. Zəhmət olmasa emailinizdəki linkə yenidən daxil olun.' });
         return;
     }
 
-    if (formData.newPassword !== formData.confirmPassword) {
-      setError('Şifrələr üst-üstə düşmür.');
+    // Frontend Validation
+    const vErrors = validators.resetPassword(formData);
+    if (Object.keys(vErrors).length > 0) {
+      setErrors(vErrors);
       return;
-    }
-
-    if (formData.newPassword.length < 6) {
-        setError('Şifrə ən azı 6 simvol olmalıdır.');
-        return;
     }
 
     setLoading(true);
@@ -45,7 +43,11 @@ const ResetPassword = () => {
       setSuccess(true);
       setTimeout(() => navigate('/login'), 3000);
     } catch (err) {
-      setError(err.response?.data?.message || 'Xəta baş verdi. Tokenin vaxtı bitmiş ola bilər.');
+      const backendErrors = mapBackendErrors(err.response?.data);
+      setErrors(backendErrors);
+      if (!Object.keys(backendErrors).length) {
+        setErrors({ form: err.response?.data?.message || 'Xəta baş verdi. Tokenin vaxtı bitmiş ola bilər.' });
+      }
     } finally {
       setLoading(false);
     }
@@ -88,10 +90,10 @@ const ResetPassword = () => {
             </div>
         ) : (
           <form onSubmit={handleSubmit} className="relative space-y-6">
-            {error && (
-              <div className="bg-red-950/50 border border-red-500 text-red-300 p-4 rounded-xl flex items-center gap-3 text-sm animate-in shake">
+            {errors.form && (
+              <div className="bg-red-500/10 border border-red-500/20 text-red-500 p-4 rounded-xl flex items-center gap-3 text-sm animate-in shake">
                 <AlertCircle size={18} />
-                <span className="font-bold">{error}</span>
+                <span className="font-bold">{errors.form}</span>
               </div>
             )}
 
@@ -99,41 +101,46 @@ const ResetPassword = () => {
               <div className="space-y-2">
                 <label className="text-xs font-bold text-gray-500 uppercase tracking-widest ml-1">Yeni Şifrə</label>
                 <div className="relative">
-                  <Lock className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500" size={18} />
+                  <Lock className={`absolute left-4 top-1/2 -translate-y-1/2 ${errors.newPassword ? 'text-red-500' : 'text-gray-500'}`} size={18} />
                   <input
                     type="password"
-                    required
                     value={formData.newPassword}
-                    onChange={(e) => setFormData({...formData, newPassword: e.target.value})}
+                    onChange={(e) => {
+                      setFormData({...formData, newPassword: e.target.value});
+                      if (errors.newPassword || errors.form) setErrors({});
+                    }}
                     placeholder="••••••••"
-                    className="w-full bg-glass-bg border border-glass-border rounded-xl py-4 pl-12 pr-4 text-white focus:outline-none focus:border-primary-accent transition-all font-medium"
+                    className={`w-full bg-glass-bg border ${errors.newPassword ? 'border-red-500' : 'border-glass-border'} rounded-xl py-4 pl-12 pr-4 text-white focus:outline-none focus:border-primary-accent transition-all font-medium`}
                   />
                 </div>
+                {errors.newPassword && <p className="text-[10px] text-red-500 font-bold uppercase ml-1">{errors.newPassword}</p>}
               </div>
 
               <div className="space-y-2">
                 <label className="text-xs font-bold text-gray-500 uppercase tracking-widest ml-1">Şifrənin Təkrarı</label>
                 <div className="relative">
-                  <Lock className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500" size={18} />
+                  <Lock className={`absolute left-4 top-1/2 -translate-y-1/2 ${errors.confirmPassword ? 'text-red-500' : 'text-gray-500'}`} size={18} />
                   <input
                     type="password"
-                    required
                     value={formData.confirmPassword}
-                    onChange={(e) => setFormData({...formData, confirmPassword: e.target.value})}
+                    onChange={(e) => {
+                      setFormData({...formData, confirmPassword: e.target.value});
+                      if (errors.confirmPassword || errors.form) setErrors({});
+                    }}
                     placeholder="••••••••"
-                    className="w-full bg-glass-bg border border-glass-border rounded-xl py-4 pl-12 pr-4 text-white focus:outline-none focus:border-primary-accent transition-all font-medium"
+                    className={`w-full bg-glass-bg border ${errors.confirmPassword ? 'border-red-500' : 'border-glass-border'} rounded-xl py-4 pl-12 pr-4 text-white focus:outline-none focus:border-primary-accent transition-all font-medium`}
                   />
                 </div>
+                {errors.confirmPassword && <p className="text-[10px] text-red-500 font-bold uppercase ml-1">{errors.confirmPassword}</p>}
               </div>
             </div>
 
             <button
               type="submit"
               disabled={loading}
-              className="w-full bg-primary-accent hover:bg-primary-light text-white py-5 rounded-xl font-black uppercase tracking-widest transition-all shadow-lg flex items-center justify-center gap-3"
+              className="w-full bg-primary-accent hover:bg-primary-light text-white py-5 rounded-xl font-black uppercase tracking-widest transition-all shadow-lg flex items-center justify-center gap-3 disabled:opacity-50"
             >
-              {loading ? <Loader2 className="animate-spin" size={20} /> : <Save size={20} />}
-              Şifrəni Yenilə
+              {loading ? <><Loader2 className="animate-spin" size={20} /> Göndərilir...</> : <><Save size={20} /> Şifrəni Yenilə</>}
             </button>
           </form>
         )}

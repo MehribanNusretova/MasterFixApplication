@@ -82,6 +82,15 @@ const MasterDetail = () => {
 
     setReviewSaving(true);
     setErrors({});
+
+    // Frontend Validation
+    const validationErrors = validators.review(reviewData);
+    if (Object.keys(validationErrors).length > 0) {
+      setErrors(validationErrors);
+      setReviewSaving(false);
+      return;
+    }
+
     try {
       await apiService.addReview({
         bookingId: completedBooking.id,
@@ -95,7 +104,11 @@ const MasterDetail = () => {
       setReviews(reviewsRes.data);
     } catch (error) {
       console.error("Review error:", error);
-      setErrors({ review: error.response?.data?.message || "Rəy göndərilərkən xəta baş verdi." });
+      const backendErrors = mapBackendErrors(error.response?.data);
+      setErrors(backendErrors);
+      if (!Object.keys(backendErrors).length) {
+          setErrors({ review: error.response?.data?.message || "Rəy göndərilərkən xəta baş verdi." });
+      }
     } finally {
       setReviewSaving(false);
     }
@@ -122,10 +135,8 @@ const MasterDetail = () => {
       // Ensure date is in YYYY-MM-DDTHH:mm:ss format
       let formattedDate = bookingData.bookingDate;
       if (formattedDate && !formattedDate.includes('T')) {
-          // If it's just a date, append time
           formattedDate += 'T12:00:00';
       } else if (formattedDate && formattedDate.length === 16) {
-          // If it's YYYY-MM-DDTHH:mm, append :00
           formattedDate += ':00';
       }
 
@@ -136,26 +147,17 @@ const MasterDetail = () => {
         bookingDate: formattedDate
       };
 
-      if (!payload.description || !payload.address || !payload.bookingDate || !payload.masterId) {
-          setErrors({ global: "Sifariş məlumatlarını tam doldurun." });
-          setBookingLoading(false);
-          return;
-      }
-
-      console.log("Booking payload:", payload);
       await apiService.createBooking(payload);
       
       setBookingSuccess(true);
       setTimeout(() => setBookingSuccess(false), 5000);
       setBookingData({ description: '', address: '', bookingDate: '' });
     } catch (error) {
-      console.log("Backend validation errors:", error.response?.data);
-      const backendErrors = error.response?.data;
-      if (backendErrors && typeof backendErrors === 'object') {
-          setErrors(mapBackendErrors(backendErrors));
-          setErrors(prev => ({ ...prev, global: "Sifariş məlumatlarını tam doldurun." }));
-      } else {
-          setErrors({ global: "Sifariş zamanı xəta baş verdi. Zəhmət olmasa yenidən yoxlayın." });
+      console.log("Booking backend errors:", error.response?.data);
+      const backendErrors = mapBackendErrors(error.response?.data);
+      setErrors(backendErrors);
+      if (!Object.keys(backendErrors).length) {
+          setErrors({ global: error.response?.data?.message || "Sifariş zamanı xəta baş verdi. Zəhmət olmasa yenidən yoxlayın." });
       }
     } finally {
       setBookingLoading(false);

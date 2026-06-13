@@ -189,7 +189,7 @@ const Register = () => {
                   name="password"
                   value={formData.password}
                   onChange={handleChange}
-                  placeholder="••••••••"
+                  placeholder="minimum 8 simvol"
                   className={`w-full bg-glass-bg border ${errors.password ? 'border-red-500' : 'border-glass-border'} rounded-xl py-3 pl-12 pr-4 outline-none focus:border-primary-accent transition-all`}
                 />
               </div>
@@ -200,9 +200,9 @@ const Register = () => {
           <button
             type="submit"
             disabled={loading}
-            className="w-full bg-primary-accent hover:bg-primary-light text-white py-4 rounded-xl font-bold transition-all transform hover:scale-[1.01] active:scale-95 disabled:opacity-50 shadow-lg shadow-primary-accent/20"
+            className="w-full bg-primary-accent hover:bg-primary-light text-white py-4 rounded-xl font-bold transition-all transform hover:scale-[1.01] active:scale-95 disabled:opacity-50 shadow-lg shadow-primary-accent/20 flex items-center justify-center gap-2"
           >
-            {loading ? 'Hesab yaradılır...' : 'Qeydiyyatdan Keç'}
+            {loading ? <><Loader2 className="animate-spin" size={20} /> Göndərilir...</> : 'Qeydiyyatdan Keç'}
           </button>
         </form>
 

@@ -58,7 +58,7 @@ export const validators = {
         errors.lastName = validateRequired(data.lastName, "Soyad");
         errors.userName = validateRequired(data.userName, "İstifadəçi adı");
         errors.email = validateEmail(data.email);
-        errors.password = validateMinLength(data.password, 6, "Şifrə") || validateRequired(data.password, "Şifrə");
+        errors.password = validateMinLength(data.password, 8, "Şifrə") || validateRequired(data.password, "Şifrə");
         errors.phone = validateRequired(data.phone, "Telefon nömrəsi");
         
         return Object.fromEntries(Object.entries(errors).filter(([_, v]) => v !== null));
@@ -103,7 +103,7 @@ export const validators = {
         errors.bookingDate = validateRequired(data.bookingDate, "Sifariş tarixi");
         
         if (data.bookingDate && new Date(data.bookingDate) < new Date()) {
-            errors.bookingDate = "Sifariş tarixi keçmiş zaman ola bilər";
+            errors.bookingDate = "Sifariş tarixi keçmiş zaman ola bilməz";
         }
         
         return Object.fromEntries(Object.entries(errors).filter(([_, v]) => v !== null));
@@ -112,14 +112,32 @@ export const validators = {
     review: (data) => {
         const errors = {};
         errors.rating = validateRange(data.rating, 1, 5, "Rating") || validateRequired(data.rating, "Rating");
-        errors.comment = validateMaxLength(data.comment, 1000, "Rəy");
+        errors.comment = validateMaxLength(data.comment, 1000, "Rəy") || validateRequired(data.comment, "Rəy");
         return Object.fromEntries(Object.entries(errors).filter(([_, v]) => v !== null));
     },
 
-    category: (data) => {
+    portfolio: (data) => {
         const errors = {};
-        errors.name = validateRange(data.name?.length, 2, 50, "Kateqoriya adı") || validateRequired(data.name, "Kateqoriya adı");
-        errors.description = validateRequired(data.description, "Kateqoriya təsviri");
+        errors.title = validateRequired(data.title, "Başlıq");
+        errors.description = validateRequired(data.description, "Açıqlama");
+        if (!data.file && !data.id) { // id checks if it's an update (though mostly we create new ones)
+            errors.file = "Fayl seçilməlidir";
+        }
+        return Object.fromEntries(Object.entries(errors).filter(([_, v]) => v !== null));
+    },
+
+    forgotPassword: (data) => {
+        const errors = {};
+        errors.email = validateEmail(data.email);
+        return Object.fromEntries(Object.entries(errors).filter(([_, v]) => v !== null));
+    },
+
+    resetPassword: (data) => {
+        const errors = {};
+        errors.newPassword = validateMinLength(data.newPassword, 8, "Yeni şifrə") || validateRequired(data.newPassword, "Yeni şifrə");
+        if (data.newPassword !== data.confirmPassword) {
+            errors.confirmPassword = "Şifrələr uyğun gəlmir";
+        }
         return Object.fromEntries(Object.entries(errors).filter(([_, v]) => v !== null));
     }
 };
@@ -129,8 +147,11 @@ export const validators = {
  */
 export const mapBackendErrors = (errorResponse) => {
     if (errorResponse && typeof errorResponse === 'object') {
-        // Spring Boot Standard Validation Response: { fieldName: "message" }
-        // bezen ise { errors: { fieldName: "message" } }
+        // Handle new standard format: { message: "...", validationErrors: { ... } }
+        if (errorResponse.validationErrors) {
+            return errorResponse.validationErrors;
+        }
+        // Fallback for older formats
         return errorResponse.errors || errorResponse;
     }
     return {};

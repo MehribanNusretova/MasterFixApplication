@@ -91,6 +91,14 @@ public class BookingController {
         bookingService.deleteBooking(authentication, id);
     }
 
+    @PatchMapping("/{id}/hide")
+    public void hideBooking(
+            Authentication authentication,
+            @PathVariable Long id
+    ) {
+        bookingService.hideBooking(authentication, id);
+    }
+
     @PatchMapping("/{id}/status")
     public BookingResponse updateBookingStatus(
             Authentication authentication,
