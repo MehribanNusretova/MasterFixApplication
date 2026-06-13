@@ -19,7 +19,7 @@ public record RegisterRequest (
         String email,
 
         @NotBlank(message = "Şifrə boş ola bilməz")
-        @Size(min = 6, message = "Şifrə ən azı 6 simvoldan ibarət olmalıdır")
+        @Size(min = 8, message = "Şifrə minimum 8 simvol olmalıdır")
         String password,
 
         @NotBlank(message = "Telefon nömrəsi boş ola bilməz")

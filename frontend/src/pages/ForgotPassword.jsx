@@ -2,23 +2,35 @@ import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Mail, ArrowLeft, Send, CheckCircle2, AlertCircle, Loader2 } from 'lucide-react';
 import apiService from '../api/apiService';
+import { validators, mapBackendErrors } from '../utils/validators';
 
 const ForgotPassword = () => {
   const [email, setEmail] = useState('');
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
-  const [error, setError] = useState('');
+  const [errors, setErrors] = useState({});
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    setErrors({});
+    
+    const vErrors = validators.forgotPassword({ email });
+    if (Object.keys(vErrors).length > 0) {
+      setErrors(vErrors);
+      return;
+    }
+
     setLoading(true);
-    setError('');
 
     try {
       await apiService.forgotPassword({ email });
       setSuccess(true);
     } catch (err) {
-      setError(err.response?.data?.message || 'Xəta baş verdi. Zəhmət olmasa emailinizi yoxlayın.');
+      const backendErrors = mapBackendErrors(err.response?.data);
+      setErrors(backendErrors);
+      if (!Object.keys(backendErrors).length) {
+        setErrors({ form: err.response?.data?.message || 'Xəta baş verdi. Zəhmət olmasa emailinizi yoxlayın.' });
+      }
     } finally {
       setLoading(false);
     }
@@ -54,35 +66,37 @@ const ForgotPassword = () => {
         </div>
 
         <form onSubmit={handleSubmit} className="relative space-y-6">
-          {error && (
-            <div className="bg-red-950/50 border border-red-500 text-red-300 p-4 rounded-xl flex items-center gap-3 text-sm animate-in shake">
+          {errors.form && (
+            <div className="bg-red-500/10 border border-red-500/20 text-red-500 p-4 rounded-xl flex items-center gap-3 text-sm animate-in shake">
               <AlertCircle size={18} />
-              <span className="font-bold">{error}</span>
+              <span className="font-bold">{errors.form}</span>
             </div>
           )}
 
           <div className="space-y-2">
             <label className="text-xs font-bold text-gray-500 uppercase tracking-widest ml-1">Email</label>
             <div className="relative">
-              <Mail className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500" size={18} />
+              <Mail className={`absolute left-4 top-1/2 -translate-y-1/2 ${errors.email ? 'text-red-500' : 'text-gray-500'}`} size={18} />
               <input
                 type="email"
-                required
                 value={email}
-                onChange={(e) => setEmail(e.target.value)}
+                onChange={(e) => {
+                  setEmail(e.target.value);
+                  if (errors.email || errors.form) setErrors({});
+                }}
                 placeholder="nümunə@mail.com"
-                className="w-full bg-glass-bg border border-glass-border rounded-xl py-4 pl-12 pr-4 text-white focus:outline-none focus:border-primary-accent transition-all font-medium"
+                className={`w-full bg-glass-bg border ${errors.email ? 'border-red-500' : 'border-glass-border'} rounded-xl py-4 pl-12 pr-4 text-white focus:outline-none focus:border-primary-accent transition-all font-medium`}
               />
             </div>
+            {errors.email && <p className="text-[10px] text-red-500 font-bold uppercase ml-1">{errors.email}</p>}
           </div>
 
           <button
             type="submit"
             disabled={loading}
-            className="w-full bg-primary-accent hover:bg-primary-light text-white py-5 rounded-xl font-black uppercase tracking-widest transition-all shadow-lg flex items-center justify-center gap-3"
+            className="w-full bg-primary-accent hover:bg-primary-light text-white py-5 rounded-xl font-black uppercase tracking-widest transition-all shadow-lg flex items-center justify-center gap-3 disabled:opacity-50"
           >
-            {loading ? <Loader2 className="animate-spin" size={20} /> : <Send size={20} />}
-            Linki Göndər
+            {loading ? <><Loader2 className="animate-spin" size={20} /> Göndərilir...</> : <><Send size={20} /> Linki Göndər</>}
           </button>
         </form>
 

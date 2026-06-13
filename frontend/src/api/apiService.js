@@ -28,6 +28,7 @@ const apiService = {
   completeBooking: (id) => api.put(`/bookings/${id}/complete`),
   cancelBooking: (id) => api.put(`/bookings/${id}/cancel`),
   deleteBooking: (id) => api.delete(`/bookings/${id}`),
+  hideBooking: (id) => api.patch(`/bookings/${id}/hide`),
   updateBookingStatus: (id, status) => api.patch(`/bookings/${id}/status`, { status }),
   getBookingMessages: (bookingId) => api.get(`/bookings/${bookingId}/messages`),
   sendBookingMessage: (bookingId, content) => api.post(`/bookings/${bookingId}/messages`, { content }),

@@ -239,10 +239,23 @@ public class MasterService {
 
 
     private MasterResponse mapToMasterResponse(Master master) {
+        String fullName = "Usta";
+        if (master.getUser() != null) {
+            String firstName = master.getUser().getFirstName() != null ? master.getUser().getFirstName() : "";
+            String lastName = master.getUser().getLastName() != null ? master.getUser().getLastName() : "";
+            fullName = (firstName + " " + lastName).trim();
+            if (fullName.isEmpty()) fullName = "Usta";
+        }
+
+        String categoryName = "Xidmət";
+        if (master.getCategory() != null) {
+            categoryName = master.getCategory().getName() != null ? master.getCategory().getName() : "Xidmət";
+        }
+
         return new MasterResponse(
                 master.getId(),
-                master.getUser().getFirstName() + " " + master.getUser().getLastName(),
-                master.getCategory().getName(),
+                fullName,
+                categoryName,
                 master.getDescription(),
                 master.getExperienceYear(),
                 master.getCity(),

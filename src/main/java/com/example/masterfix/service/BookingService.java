@@ -80,7 +80,7 @@ public class BookingService {
         User user = userRepository.findByEmail(email)
                 .orElseThrow(() -> new ResourceNotFoundException("User tapılmadı"));
 
-        return bookingRepository.findByUser(user)
+        return bookingRepository.findByUserAndHiddenByUserFalse(user)
                 .stream()
                 .map(this::mapToBookingResponse)
                 .toList();
@@ -176,6 +176,28 @@ public class BookingService {
     }
 
     @Transactional
+    public void hideBooking(Authentication authentication, Long bookingId) {
+        String email = authentication.getName();
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new ResourceNotFoundException("User tapılmadı"));
+
+        Booking booking = bookingRepository.findById(bookingId)
+                .orElseThrow(() -> new ResourceNotFoundException("Booking tapılmadı"));
+
+        if (!booking.getUser().getId().equals(user.getId())) {
+            throw new AccessDeniedException("Bu sifariş sizə aid deyil");
+        }
+
+        if (booking.getBookingStatus() != BookingStatusEnum.CANCELLED && 
+            booking.getBookingStatus() != BookingStatusEnum.REJECTED) {
+            throw new com.example.masterfix.exception.BadRequestException("Yalnız ləğv edilmiş və ya rədd edilmiş sifarişləri gizlətmək olar");
+        }
+
+        booking.setHiddenByUser(true);
+        bookingRepository.save(booking);
+    }
+
+    @Transactional
     public void deleteBooking(Authentication authentication, Long bookingId) {
         String email = authentication.getName();
         User user = userRepository.findByEmail(email)
@@ -218,18 +240,44 @@ public class BookingService {
 
 
     private BookingResponse mapToBookingResponse(Booking booking) {
+        String userFullName = "Müştəri";
+        if (booking.getUser() != null) {
+            String firstName = booking.getUser().getFirstName() != null ? booking.getUser().getFirstName() : "";
+            String lastName = booking.getUser().getLastName() != null ? booking.getUser().getLastName() : "";
+            userFullName = (firstName + " " + lastName).trim();
+            if (userFullName.isEmpty()) userFullName = "Müştəri";
+        }
+
+        String masterFullName = "Usta";
+        Long masterId = null;
+        String masterCategory = "Xidmət";
+
+        if (booking.getMaster() != null) {
+            masterId = booking.getMaster().getId();
+            if (booking.getMaster().getUser() != null) {
+                String firstName = booking.getMaster().getUser().getFirstName() != null ? booking.getMaster().getUser().getFirstName() : "";
+                String lastName = booking.getMaster().getUser().getLastName() != null ? booking.getMaster().getUser().getLastName() : "";
+                masterFullName = (firstName + " " + lastName).trim();
+                if (masterFullName.isEmpty()) masterFullName = "Usta";
+            }
+            if (booking.getMaster().getCategory() != null) {
+                masterCategory = booking.getMaster().getCategory().getName() != null ? booking.getMaster().getCategory().getName() : "Xidmət";
+            }
+        }
+
         return new BookingResponse(
                 booking.getId(),
-                booking.getUser().getFirstName() + " " + booking.getUser().getLastName(),
-                booking.getMaster().getUser().getFirstName() + " " + booking.getMaster().getUser().getLastName(),
-                booking.getMaster().getId(),
-                booking.getMaster().getCategory().getName(),
-                booking.getDescription(),
-                booking.getAddress(),
+                userFullName,
+                masterFullName,
+                masterId,
+                masterCategory,
+                booking.getDescription() != null ? booking.getDescription() : "",
+                booking.getAddress() != null ? booking.getAddress() : "",
                 booking.getBookingDate(),
-                booking.getBookingStatus()
+                booking.getBookingStatus() != null ? booking.getBookingStatus() : BookingStatusEnum.PENDING
         );
     }
+
     public BookingResponse getBookingById(Authentication authentication, Long id) {
         String email = authentication.getName();
         User user = userRepository.findByEmail(email)
@@ -238,9 +286,14 @@ public class BookingService {
         Booking booking = bookingRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Sifariş tapılmadı"));
 
-        boolean isOwner = booking.getUser().getId().equals(user.getId());
-        boolean isMasterOfBooking = booking.getMaster().getUser().getId().equals(user.getId());
-        boolean isAdmin = user.getRole().name().equalsIgnoreCase("ADMIN");
+        boolean isOwner = booking.getUser() != null && booking.getUser().getId().equals(user.getId());
+        
+        boolean isMasterOfBooking = false;
+        if (booking.getMaster() != null && booking.getMaster().getUser() != null) {
+            isMasterOfBooking = booking.getMaster().getUser().getId().equals(user.getId());
+        }
+        
+        boolean isAdmin = user.getRole() != null && user.getRole().name().equalsIgnoreCase("ADMIN");
 
         if (!isOwner && !isMasterOfBooking && !isAdmin) {
             throw new AccessDeniedException("Bu sifarişin detallarına baxmaq üçün icazəniz yoxdur!");

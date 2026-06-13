@@ -56,12 +56,11 @@ const MyBookings = () => {
   const handleDelete = async (id) => {
     if (window.confirm('Sifarişi siyahıdan silmək istədiyinizə əminsiniz?')) {
       try {
-        // Try backend delete first
-        await apiService.deleteBooking(id);
+        await apiService.hideBooking(id);
         fetchBookings();
       } catch (error) {
         console.error("BOOKING ACTION ERROR:", error.response?.status, error.response?.data);
-        // Fallback: Remove from UI list if backend fails or doesn't exist
+        // Fallback: Remove from UI list if backend fails
         setBookings(prev => prev.filter(b => b.id !== id));
       }
     }
