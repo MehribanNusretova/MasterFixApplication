@@ -18,26 +18,23 @@ public class AdminInitializer implements CommandLineRunner {
     @Override
     public void run(String... args) {
 
-        if (!userRepository.existsByEmail("admin@masterfix.com")) {
-
-            User admin = new User();
-
-            admin.setFirstName("Admin");
-            admin.setLastName("Admin");
-            admin.setUserName("admin");
-
-            admin.setEmail("admin@masterfix.az");
-
-            admin.setPhone("+994500000000");
-
-            admin.setPassword(
-                    passwordEncoder.encode("admin123")
-            );
-
-            admin.setRole(Role.ADMIN);
-
-            userRepository.save(admin);
-
+        if (userRepository.existsByEmail("admin@masterfix.az")) {
+            return;
         }
+
+        User admin = User.builder()
+                .firstName("Admin")
+                .lastName("MasterFix")
+                .email("admin@masterfix.az")
+                .userName("admin")
+                .password(passwordEncoder.encode("admin123"))
+                .role(Role.ADMIN)
+                .active(true)
+                .verified(true)
+                .build();
+
+        userRepository.save(admin);
     }
 }
+
+
