@@ -107,6 +107,10 @@ public class BookingService {
     public BookingResponse acceptBooking(Authentication authentication, Long bookingId) {
 
         Booking booking = getBookingForCurrentMaster(authentication, bookingId);
+        
+        if (booking.getBookingStatus() != BookingStatusEnum.PENDING) {
+            throw new com.example.masterfix.exception.BadRequestException("Yalnız PENDING statusunda olan sifarişlər qəbul edilə bilər");
+        }
 
         booking.setBookingStatus(BookingStatusEnum.ACCEPTED);
 
@@ -117,6 +121,10 @@ public class BookingService {
 
         Booking booking = getBookingForCurrentMaster(authentication, bookingId);
 
+        if (booking.getBookingStatus() != BookingStatusEnum.PENDING) {
+            throw new com.example.masterfix.exception.BadRequestException("Yalnız PENDING statusunda olan sifarişlər rədd edilə bilər");
+        }
+
         booking.setBookingStatus(BookingStatusEnum.REJECTED);
 
         return mapToBookingResponse(bookingRepository.save(booking));
@@ -126,6 +134,10 @@ public class BookingService {
     public BookingResponse completeBooking(Authentication authentication, Long bookingId) {
 
         Booking booking = getBookingForCurrentMaster(authentication, bookingId);
+
+        if (booking.getBookingStatus() != BookingStatusEnum.ACCEPTED) {
+            throw new com.example.masterfix.exception.BadRequestException("Yalnız ACCEPTED statusunda olan sifarişlər tamamlana bilər");
+        }
 
         booking.setBookingStatus(BookingStatusEnum.COMPLETED);
 
@@ -182,6 +194,7 @@ public class BookingService {
                 booking.getId(),
                 booking.getUser().getFirstName() + " " + booking.getUser().getLastName(),
                 booking.getMaster().getUser().getFirstName() + " " + booking.getMaster().getUser().getLastName(),
+                booking.getMaster().getId(),
                 booking.getMaster().getCategory().getName(),
                 booking.getDescription(),
                 booking.getAddress(),

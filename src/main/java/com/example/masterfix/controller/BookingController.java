@@ -1,8 +1,11 @@
 package com.example.masterfix.controller;
 
 import com.example.masterfix.dto.request.BookingRequest;
+import com.example.masterfix.dto.request.MessageRequest;
 import com.example.masterfix.dto.response.BookingResponse;
+import com.example.masterfix.dto.response.MessageResponse;
 import com.example.masterfix.service.BookingService;
+import com.example.masterfix.service.MessageService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -17,6 +20,7 @@ import java.util.List;
 public class BookingController {
 
     private final BookingService bookingService;
+    private final MessageService messageService;
 
     @PostMapping
     public BookingResponse createBooking(
@@ -77,5 +81,42 @@ public class BookingController {
             @Valid @PathVariable Long id
     ) {
         return bookingService.cancelBooking(authentication, id);
+    }
+
+    @PatchMapping("/{id}/status")
+    public BookingResponse updateBookingStatus(
+            Authentication authentication,
+            @PathVariable Long id,
+            @RequestBody java.util.Map<String, String> statusUpdate
+    ) {
+        String status = statusUpdate.get("status");
+        com.example.masterfix.enums.BookingStatusEnum statusEnum = com.example.masterfix.enums.BookingStatusEnum.valueOf(status);
+        
+        if (statusEnum == com.example.masterfix.enums.BookingStatusEnum.ACCEPTED) {
+            return bookingService.acceptBooking(authentication, id);
+        } else if (statusEnum == com.example.masterfix.enums.BookingStatusEnum.REJECTED) {
+            return bookingService.rejectBooking(authentication, id);
+        } else if (statusEnum == com.example.masterfix.enums.BookingStatusEnum.COMPLETED) {
+            return bookingService.completeBooking(authentication, id);
+        }
+        
+        throw new com.example.masterfix.exception.BadRequestException("Yanlış status");
+    }
+
+    @PostMapping("/{id}/messages")
+    public MessageResponse sendMessage(
+            Authentication authentication,
+            @PathVariable Long id,
+            @Valid @RequestBody MessageRequest request
+    ) {
+        return messageService.sendMessage(authentication, id, request);
+    }
+
+    @GetMapping("/{id}/messages")
+    public List<MessageResponse> getMessages(
+            Authentication authentication,
+            @PathVariable Long id
+    ) {
+        return messageService.getMessages(authentication, id);
     }
 }
