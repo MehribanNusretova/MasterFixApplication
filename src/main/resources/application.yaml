@@ -32,3 +32,9 @@ jwt:
 
 file:
   upload-dir: uploads
+
+app:
+  admin:
+    email: ${ADMIN_EMAIL:}
+    password: ${ADMIN_PASSWORD:}
+    phone: ${ADMIN_PHONE:+994500000000}
