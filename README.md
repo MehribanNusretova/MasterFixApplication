@@ -8,6 +8,7 @@ MasterFix connects customers with local craftsmen ("masters"): electricians, plu
 Customers find a master, book a job, chat about it and leave a review. Masters manage their profile, portfolio and incoming bookings.
 
 **Backend:** Java 21 · Spring Boot 4 · Spring Security · JWT · Spring Data JPA · PostgreSQL · Java Mail · Swagger / OpenAPI · Docker Compose
+
 **Frontend:** React · Vite · Tailwind CSS (in [`/frontend`](frontend))
 
 ![MasterFix screens](screenshots/masterfix-overview.png)
@@ -168,4 +169,5 @@ screenshots/
 ## Author
 
 **Mehriban Nüsrətova** — Junior Java Backend Developer
+
 [LinkedIn](https://www.linkedin.com/in/mehriban-nusratova) · [GitHub](https://github.com/MehribanNusretova)
